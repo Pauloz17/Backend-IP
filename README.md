@@ -10,9 +10,8 @@
 
 | Nombre | Rol | Rama | Usuario de GitHub |
 |:---|:---|:---|:---|
-| Karol Nicolle Torres Fuentes | Líder (Arquitecto) | `desarrolladora` | `@Karolatf` |
-| Sebastián Patiño | Desarrollador | `developer` | `@SebasPatino` |
-| Paulo Zapata | Desarrollador | `desarrollador` | `@Pauloz17` |
+Ana Isabella Garcia Rozo  |  `Developer ` | `desarrolladora` | `@Isapro18` |
+| Paulo Zapata | Desarrollador | `Lider (Arquitecto)` | `@Pauloz17` |
 
 ---
 
