@@ -44,9 +44,8 @@ servidor_backend_parejas/
 │   └── schema.sql       ← tablas e inserts (ejecutar con app_user)
 ├── md/                  ← NUEVO: documentación técnica del proyecto
 │   ├── asignaciones_1/
-│   │   ├── asignacion_karol.md
+│   │   ├── asignacion_Isabella.md
 │   │   ├── asignacion_paulo.md
-│   │   └── asignacion_sebastian.md
 │   ├── analisisTecnico.md
 │   ├── analisisRedundancia.md
 │   ├── infoTecBackend.md
@@ -254,11 +253,10 @@ Usuario (evento DOM)
 ## Estructura de Ramas
 
 ```
-main          ← producción (solo Karol mergea, con tag de versión)
+main          ← producción (solo Paulo mergea, con tag de versión)
   └── release ← integración (todos hacen PR aquí)
-        ├── desarrolladora  ← rama de Karol
-        ├── developer       ← rama de Sebastián
-        └── desarrollador   ← rama de Paulo
+        ├── desarrollador-Isa  ← rama de Isa
+        └── desarrollador-Paulo   ← rama de Paulo
 ```
 
 **Regla de oro:** ningún commit va directo a `main` ni a `release`. Todo entra por Pull Request con al menos una aprobación del líder.
