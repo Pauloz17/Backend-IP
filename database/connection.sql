@@ -1,15 +1,15 @@
 -- ============================================================
 -- ARCHIVO: database/connection.sql
 -- PROYECTO: servidor_backend_parejas - Sistema de Gestión de Tareas
--- AUTORES: Karol Torres y Sebastian Patiño
+-- AUTORES: Paulo y Isabella
 -- SENA - Técnico en Programación de Software
 -- ============================================================
--- INSTRUCCIONES PARA SEBASTIÁN:
--- Este archivo lo ejecutan con la conexión app_user en Workbench.
--- Antes, ejecuten el bloque en la conexion de root es decir este bloque (SI NO LO HAN HECHO YA):
+-- INSTRUCCIONES:
+-- Ejecutar este bloque con la conexión root en Workbench.
+-- Crea la base de datos y el usuario de la aplicación.
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS gestion_tareas_sena;
-CREATE USER IF NOT EXISTS 'app_user'@'localhost' IDENTIFIED BY 'TORRES_2007';
-GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'app_user'@'localhost';
+CREATE USER IF NOT EXISTS 'paulo_user'@'localhost' IDENTIFIED BY 'Paulo2024*';
+GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'paulo_user'@'localhost';
 FLUSH PRIVILEGES;

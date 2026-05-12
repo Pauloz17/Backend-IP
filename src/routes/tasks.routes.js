@@ -29,7 +29,7 @@ import {
 // Se importa el middleware genérico de validación
 import { validateSchema } from '../middlewares/validator.middleware.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
-import { authorize } from '../middlewares/authorization.js';
+import { checkPermission } from '../middlewares/authorization.middleware.js';
 
 // Se importan los esquemas de validación para cada operación de tareas
 import {
@@ -51,7 +51,7 @@ router.get('/filter', filterTasks);
 router.get('/dashboard', getDashboard);
 
 // GET /api/tasks/all — lista todas las tareas (requiere permiso RBAC)
-router.get('/all', verifyToken, authorize('tasks.view.all'), getTasks);
+router.get('/all', verifyToken, checkPermission('tasks.view.all'), getTasks);
 
 // ── RUTAS PRINCIPALES ──
 
@@ -60,7 +60,7 @@ router.get('/', getTasks);
 
 // POST /api/tasks — crea una tarea nueva
 // validateSchema(createTaskSchema) actúa como guardia antes de createTask
-router.post('/', verifyToken, authorize('tasks.create'), validateSchema(createTaskSchema), createTask);
+router.post('/', verifyToken, checkPermission('tasks.create'), validateSchema(createTaskSchema), createTask);
 
 // GET    /api/tasks/:id — obtiene una tarea por id (no requiere validación de body)
 router.get('/:id', getTaskById);
@@ -70,7 +70,7 @@ router.get('/:id', getTaskById);
 router.put('/:id', validateSchema(updateTaskSchema), updateTask);
 
 // DELETE /api/tasks/:id — elimina una tarea (no requiere validación de body)
-router.delete('/:id', verifyToken, authorize('tasks.delete.all'), deleteTask);
+router.delete('/:id', verifyToken, checkPermission('tasks.delete.all'), deleteTask);
 
 // ── ESTADO ──
 
