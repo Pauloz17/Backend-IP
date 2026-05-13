@@ -1,6 +1,6 @@
 -- ============================================================
 -- ARCHIVO: database/connection.sql
--- PROYECTO: servidor_backend_parejas - Sistema de Gestión de Tareas
+-- PROYECTO: BACKEND-IP - Sistema de Gestión de Tareas
 -- AUTORES: Paulo y Isabella
 -- SENA - Técnico en Programación de Software
 -- ============================================================

@@ -5,8 +5,8 @@ Este documento establece las reglas de convivencia, comunicación y estándares 
 ## 1. Miembros del Equipo y Roles
 | Nombre | Rol | Usuario de GitHub |
 | :--- | :--- | :--- |
-| Karol Torres | Líder (Arquitecto) | `@karolatf` |
-| Sebastián Patiño | Desarrollador | `@SebasPatino` |
+| Paulo Zapata | Líder | `@Pauloz17` |
+| Ana Isabella | Desarrollador | `Isapro18` |
 
 ## 2. Canales de Comunicación
 Para mantener el orden y separar lo profesional de lo personal, usaremos los siguientes canales:

@@ -1,7 +1,7 @@
 -- ============================================================
 -- ARCHIVO: database/schema.sql
--- PROYECTO: servidor_backend_parejas - Sistema de Gestión de Tareas
--- AUTORES: Karol Torres y Sebastian Patiño
+-- PROYECTO: BACKEND-IP - Sistema de Gestión de Tareas
+-- AUTORES: Paul Zapata y Isabella Garcia
 -- SENA - Técnico en Programación de Software
 -- ============================================================
 -- INSTRUCCIONES:

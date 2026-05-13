@@ -1,4 +1,4 @@
-# Autores: Karol Nicolle Torres Fuentes | Juan Sebastián Patiño Hernández
+# Autores: Paulo Zapata | Ana Isabella
 # Proyecto: Backend para el Sistema de Gestión de Tareas
 
 # Servidor Backend Parejas

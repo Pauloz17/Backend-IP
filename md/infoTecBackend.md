@@ -9,9 +9,8 @@ del Técnico en Programación de Software — SENA.
 
 | Nombre    | Rama        | Rol                              |
 |-----------|-------------|----------------------------------|
-| Karol     | desarrolladora | Líder, app.js, frontend       |
-| Sebastián | developer   | Modelos y controladores           |
-| Paulo     | desarrollador | Rutas y documentación           |
+| Paulo     | desarrollador | Líder, app.js, frontend       |
+| Ana Isabella | developer   | Modelos y controladores           |
 
 ## Requisitos
 
@@ -72,8 +71,7 @@ models/ (userModel.js, taskModel.js — datos en memoria y operaciones CRUD)
 ```json
 [
   { "id": 1, "documento": "1097497001", "name": "Paulo",     "email": "paulo@sena.edu.co" },
-  { "id": 2, "documento": "1097497002", "name": "Sebastian", "email": "sebastian@sena.edu.co" },
-  { "id": 3, "documento": "1097497003", "name": "Karol",     "email": "karol@sena.edu.co" }
+  { "id": 2, "documento": "1097497002", "name": "Ana Isabella", "email": "ana@sena.edu.co" }
 ]
 ```
 
@@ -161,7 +159,7 @@ git push origin desarrollador
 
 ## PULL REQUEST
 
-Crea el PR desde tu fork hacia el repositorio de Karol.
+Crea el PR desde tu fork hacia el repositorio de Paulo.
 Va de tu rama `desarrollador` → rama `release` del repo original.
 
 **Espera a que el PR de Sebastián esté mergeado antes de crear este PR**,
@@ -186,8 +184,8 @@ Qué se hizo:
   tabla completa de endpoints con ejemplos de cuerpos y respuestas
 
 Por qué:
-Las rutas son el eslabón entre app.js de Karol y los controladores de
-Sebastián. Sin estos archivos, aunque app.js los registre con el prefijo
+Las rutas son el eslabón entre app.js de Paulo y los controladores de
+Ana Isabella. Sin estos archivos, aunque app.js los registre con el prefijo
 /api, no hay nada que responda a las peticiones.
 
 Archivos:
@@ -195,5 +193,5 @@ src/routes/userRoutes.js (nuevo)
 src/routes/taskRoutes.js (nuevo)
 README.md (nuevo)
 
-Orden de merge: después del PR de Sebastián, antes del PR de Karol (app.js).
+Orden de merge: después del PR de Ana Isabella, antes del PR de Paulo (app.js).
 ```
