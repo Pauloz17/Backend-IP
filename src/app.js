@@ -45,6 +45,6 @@ app.use('/api/tasks', verifyToken, tasksRouter);
 // Si se registra antes, los errores de las rutas no llegarán aquí
 app.use(errorMiddleware);
 
-app.listen(PORT, () => {
-    console.log(`Servidor escuchando en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor escuchando en todas las interfaces (0.0.0.0:${PORT})`);
 });
