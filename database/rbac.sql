@@ -1,7 +1,7 @@
 -- ============================================================
 -- ARCHIVO: database/rbac.sql
--- PROYECTO: servidor_backend_parejas — Sistema RBAC
--- AUTORES: Karol Torres y Sebastian Patiño
+-- PROYECTO: BACKEND-IP — Sistema RBAC
+-- AUTORES: Paulo y Isabella
 -- SENA — Técnico en Programación de Software
 -- ============================================================
 -- PROPÓSITO:
@@ -11,7 +11,7 @@
 --
 -- INSTRUCCIONES:
 --   Ejecutar DESPUÉS de schema.sql.
---   Usar la conexión de app_user en MySQL Workbench.
+--   Usar la conexión de paulo_user en MySQL Workbench.
 --
 -- ORDEN DE EJECUCIÓN:
 --   1. connection.sql (crear BD y usuario — solo si no existe)
@@ -158,10 +158,10 @@ WHERE r.name = 'user'
   );
 
 -- ============================================================
--- ASIGNAR ROL ADMIN A KAROL Y SEBASTIAN (ejecutar DESPUÉS del registro)
+-- ASIGNAR ROL ADMIN A PAULO E ISABELLA (ejecutar DESPUÉS del registro)
 --
 -- Este bloque NO se ejecuta al correr rbac.sql por primera vez.
--- Se ejecuta MANUALMENTE en Workbench DESPUÉS de que Karol y Sebastian
+-- Se ejecuta MANUALMENTE en Workbench DESPUÉS de que Paulo e Isabella
 -- se hayan registrado desde Postman con POST /api/auth/register.
 --
 -- Por qué no van los INSERTs de usuarios aquí:
@@ -171,26 +171,27 @@ WHERE r.name = 'user'
 --
 -- PROCEDIMIENTO:
 --   1. Correr el servidor: npm run dev
---   2. Registrar a Sebastian en Postman:
+--   2. Registrar a Paulo en Postman:
 --        POST http://localhost:3000/api/auth/register
---        Body: { "name": "Sebastian Patiño", "documento": "1005331001",
---                "email": "sebastian@sena.edu.co", "password": "tu_contraseña*" }
---   3. Registrar a Karol en Postman:
+--        Body: { "name": "Paulo", "documento": "1092209864",
+--                "email": "paulo@sena.edu.co", "password": "tu_contraseña*" }
+--   3. Registrar a Isabella en Postman:
 --        POST http://localhost:3000/api/auth/register
---        Body: { "name": "Karol Torres", "documento": "1097497001",
---                "email": "karol@sena.edu.co", "password": "tu_contraseña*" }
---   4. Ejecutar este bloque en Workbench (con conexión app_user):
+--        Body: { "name": "Isabella", "documento": "109679551",
+--                "email": "isabella@sena.edu.co", "password": "tu_contraseña*" }
+--   4. Ejecutar este bloque en Workbench:
 -- ============================================================
 
 -- Asignar rol 'admin' en el campo legacy de la tabla users
 UPDATE users
 SET role = 'admin'
-WHERE documento IN ('1005331001', '1097497001');
+WHERE documento IN ('1092209864', '109679551');
 
 -- Asignar rol 'admin' en la tabla RBAC user_roles
 -- La subconsulta obtiene los IDs reales sin hardcodearlos
 INSERT IGNORE INTO user_roles (user_id, role_id)
 SELECT u.id, r.id
 FROM users u, roles r
-WHERE u.documento IN ('1005331001', '1097497001')
+WHERE u.documento IN ('1092209864', '109679551')
+
 AND r.name = 'admin';

@@ -36,6 +36,7 @@ export function verifyToken(req, res, next) {
         // Se adjunta el payload al request para que los controladores lo usen
         // Ejemplo de uso en un controlador: const { id, role } = req.usuario;
         req.usuario = payload;
+        req.user   = payload;
 
         // Token válido — continuar al siguiente middleware o ruta
         next();
