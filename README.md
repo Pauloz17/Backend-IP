@@ -21,8 +21,8 @@ Aplicación web full-stack para gestionar tareas por usuario. Implementa un CRUD
 
 El sistema tiene dos repositorios:
 
-- **`transferencia_dom_parejas`** — Frontend modularizado con Vite y Vanilla JS
-- **`servidor_backend_parejas`** — Backend REST con Node.js, Express y MySQL
+- **`Frontend-IP`** — Frontend modularizado con Vite y Vanilla JS
+- **`BACKEND-IP`** — Backend REST con Node.js, Express y MySQL
 
 ---
 
