@@ -7,6 +7,7 @@
 
 import jwt    from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { sendEmail } from '../utils/mailer.js';
 import {
     getUserByEmail,
     getUserById,
@@ -172,7 +173,14 @@ export async function registerService({ name, documento, email, password }) {
         password: passwordHasheada,
         role: 'user',
     });
-
+    // 4.5. Enviar correo de bienvenida por Mailtrap
+await sendEmail(
+    email,
+    '¡Bienvenido al Sistema de Gestión de Tareas - SENA!',
+    `<h1>Hola ${name} 👋</h1>
+     <p>Tu cuenta ha sido creada exitosamente en el <strong>Sistema de Gestión de Tareas - SENA</strong>.</p>
+     <p>Ya puedes iniciar sesión y empezar a gestionar tus tareas.</p>`
+);
     // 5. Retornar el usuario sin el campo password
     // Se usa desestructuración para excluir password del objeto de retorno
     const { password: _ignorado, ...usuarioSinPassword } = usuarioCreado;

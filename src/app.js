@@ -17,7 +17,7 @@ const app = express();
 
 // habilita CORS para que el frontend pueda hacer peticiones al backend
 // sin esto el navegador bloquearía las peticiones con un error de origen cruzado
-app.use(cors());
+app.use(cors({ origin: '*' }));
 
 // configura el servidor para recibir cuerpos de petición en formato JSON
 // necesario para leer req.body en los controladores (POST, PUT, PATCH)

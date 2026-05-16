@@ -9,7 +9,7 @@
 -- Antes, ejecuten el bloque en la conexion de root (SI NO LO HAN HECHO YA):
 
 -- CREATE DATABASE IF NOT EXISTS gestion_tareas_sena;
--- CREATE USER IF NOT EXISTS 'app_user'@'localhost' IDENTIFIED BY 'TORRES_2007';
+-- CREATE USER IF NOT EXISTS 'app_user'@'localhost' IDENTIFIED BY 'Paulo2024*';
 -- GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'app_user'@'localhost';
 -- FLUSH PRIVILEGES;
 -- ============================================================
