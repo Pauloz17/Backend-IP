@@ -12,6 +12,7 @@ import authRouter from './routes/auth.routes.js';
 import { verifyToken } from './middlewares/auth.middleware.js';
 import usersRouter from './routes/users.routes.js';
 import tasksRouter from './routes/tasks.routes.js';
+import systemRouter from './routes/system.routes.js';
 
 const app = express();
 
@@ -30,7 +31,7 @@ const PORT = process.env.PORT || 3000;
 
 // ruta raíz para verificar que el servidor está activo
 app.get('/', (req, res) => {
-    res.status(200).json({ message: 'Bienvenido al servidor de Gestión de Tareas — SENA' });
+    res.status(200).json({ status: 'API Online', version: '4.0.0' });
 });
 
 // Ruta de autenticación — PÚBLICA (no requiere token todavía)
@@ -40,6 +41,9 @@ app.use('/api/auth', authRouter);
 // Rutas protegidas — verifyToken valida el JWT antes de llegar al controlador
 app.use('/api/users', verifyToken, usersRouter);
 app.use('/api/tasks', verifyToken, tasksRouter);
+
+// Ruta para obtener la IP de la red y estado del sistema
+app.use('/api/system', verifyToken, systemRouter);
 
 // Middleware global de errores — debe registrarse DESPUÉS de todas las rutas
 // Si se registra antes, los errores de las rutas no llegarán aquí
