@@ -1,6 +1,6 @@
 -- ============================================================
 -- ARCHIVO: database/rbac.sql
--- PROYECTO: servidor Backend-IP — Sistema RBAC
+-- PROYECTO: BACKEND-IP — Sistema RBAC
 -- AUTORES: Paulo y Isabella
 -- SENA — Técnico en Programación de Software
 -- ============================================================

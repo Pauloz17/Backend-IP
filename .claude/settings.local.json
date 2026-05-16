@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(Get-ChildItem -Path \"d:\\\\adso\\\\3233198\\\\BACKEND-IP\\\\Backend-IP\\\\src\" -Recurse -Filter \"*.js\")",
-      "Bash(Select-Object FullName)",
-      "Bash(Sort-Object FullName)"
-    ]
-  }
-}

@@ -1,7 +1,7 @@
 -- ============================================================
 -- ARCHIVO: database/schema.sql
--- PROYECTO: servidor_backend_parejas - Sistema de Gestión de Tareas
--- AUTORES: Karol Torres y Sebastian Patiño
+-- PROYECTO: BACKEND-IP - Sistema de Gestión de Tareas
+-- AUTORES: Paul Zapata y Isabella Garcia
 -- SENA - Técnico en Programación de Software
 -- ============================================================
 -- INSTRUCCIONES:
@@ -9,7 +9,7 @@
 -- Antes, ejecuten el bloque en la conexion de root (SI NO LO HAN HECHO YA):
 
 -- CREATE DATABASE IF NOT EXISTS gestion_tareas_sena;
--- CREATE USER IF NOT EXISTS 'app_user'@'localhost' IDENTIFIED BY 'TORRES_2007';
+-- CREATE USER IF NOT EXISTS 'app_user'@'localhost' IDENTIFIED BY 'Paulo2024*';
 -- GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'app_user'@'localhost';
 -- FLUSH PRIVILEGES;
 -- ============================================================

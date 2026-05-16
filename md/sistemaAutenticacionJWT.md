@@ -1,7 +1,7 @@
 # Documentación Técnica — Sistema de Autenticación JWT
 ## Sistema de Gestión de Tareas
 
-**Autores:** Karol Torres, Sebastián Patiño, Paulo Zapata  
+**Autores:** Paulo Zapata, Ana Isabella  
 **Institución:** SENA — Técnico en Programación de Software  
 **Instructor:** John Freddy Becerra Castellanos  
 **Fecha:** Abril 2026  
@@ -228,7 +228,7 @@ Con el endpoint `POST /api/auth/register` este flujo queda reemplazado por compl
 4. **Cambio de rol:** `PATCH /api/users/3/role` con `{ "role": "admin" }` → solo funciona con token de admin
 5. **Refresh:** `POST /api/auth/refresh` con el refreshToken → debe responder 200 con nuevo accessToken
 
-### En el navegador (Karol lo implementa en los Issues F-1 a F-5):
+### En el navegador (Paulo lo implementa en los Issues F-1 a F-5):
 
 1. Abrir `http://localhost:5173`
 2. Hacer clic en "Regístrate aquí" → aparece el modal
