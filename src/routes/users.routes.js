@@ -83,9 +83,8 @@ router.put('/:id', validateSchema(updateUserSchema), updateUser);
 router.delete('/:id', deleteUser);
 
 // PATCH /api/users/:id/role — cambia el rol de un usuario
-// verifyToken ya se aplica en app.js para todas las rutas /api/users
 // requireAdmin verifica adicionalmente que el usuario autenticado sea admin
 // validateSchema(changeRoleSchema) valida que role sea 'admin' o 'user'
-router.patch('/:id/role', requireAdmin, validateSchema(changeRoleSchema), changeUserRole);
+router.patch('/:id/role', verifyToken, requireAdmin, validateSchema(changeRoleSchema), changeUserRole);
 
 export default router;

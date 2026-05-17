@@ -1,8 +1,12 @@
 // MÓDULO: app.js
 // CAPA: Entrada (configura Express y registra las rutas)
 
+// carga las variables de entorno del .env ANTES que cualquier otro módulo
+// en ES modules los imports se evalúan en orden de dependencias, no de aparición,
+// por eso se usa dotenv/config aquí para garantizar que process.env esté listo
+import 'dotenv/config';
+
 // inicializa el pool de conexiones con MySQL al arrancar el servidor
-// debe ser el primer import para que el pool esté listo antes de que lleguen peticiones
 import './database/db.connection.js';
 import express from 'express';
 import cors from 'cors';
@@ -38,17 +42,17 @@ app.get('/', (req, res) => {
 // Karol agregará verifyToken a /api/users y /api/tasks en su rama
 app.use('/api/auth', authRouter);
 
-// Rutas protegidas — verifyToken valida el JWT antes de llegar al controlador
-app.use('/api/users', verifyToken, usersRouter);
-app.use('/api/tasks', verifyToken, tasksRouter);
+// Rutas ahora públicas — se eliminó el middleware verifyToken
+app.use('/api/users', usersRouter);
+app.use('/api/tasks', tasksRouter);
 
 // Ruta para obtener la IP de la red y estado del sistema
-app.use('/api/system', verifyToken, systemRouter);
+app.use('/api/system', systemRouter);
 
 // Middleware global de errores — debe registrarse DESPUÉS de todas las rutas
 // Si se registra antes, los errores de las rutas no llegarán aquí
 app.use(errorMiddleware);
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor escuchando en http://localhost:${PORT}`);
 });
