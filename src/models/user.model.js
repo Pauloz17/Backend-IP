@@ -59,20 +59,21 @@ export async function updateUser(id, campos) {
     const existente = await getUserById(id);
     if (!existente) return null;
 
-    // filtra solo los campos permitidos que realmente llegaron en el body
+    // Permitir actualizar el campo 'activo' para soft delete
     const camposFiltrados = {};
     for (const campo of CAMPOS_ACTUALIZABLES) {
         if (campos[campo] !== undefined) {
             camposFiltrados[campo] = campos[campo];
         }
     }
-
+    // Permitir explícitamente el campo 'activo' (soft delete)
+    if (campos.activo !== undefined) {
+        camposFiltrados.activo = campos.activo;
+    }
     // si no hay campos válidos no se ejecuta el UPDATE
     if (Object.keys(camposFiltrados).length === 0) return existente;
-
     const parteSet = Object.keys(camposFiltrados).map(c => `${c} = ?`).join(', ');
     const valores  = Object.values(camposFiltrados);
-
     await pool.query(
         `UPDATE users SET ${parteSet} WHERE id = ?`,
         [...valores, Number(id)]
@@ -126,7 +127,7 @@ export async function createUserWithPassword({ name, documento, email, password,
 export async function deleteUser(id) {
     const aEliminar = await getUserById(id);
     if (!aEliminar) return null;
-
+    // Hard delete: elimina físicamente el usuario
     await pool.query('DELETE FROM users WHERE id = ?', [Number(id)]);
     return aEliminar;
 }

@@ -195,3 +195,18 @@ FROM users u, roles r
 WHERE u.documento IN ('1092209864', '109679551')
 
 AND r.name = 'admin';
+
+-- ============================================================
+-- PARA PRESENTACIÓN: HACER ADMIN A PAULO
+-- ============================================================
+-- Ejecuta esta sección cuando necesites que Paulo sea admin
+-- (COPIA Y PEGA SOLO ESTO EN UNA NUEVA QUERY en Workbench)
+-- ============================================================
+
+SET SQL_SAFE_UPDATES=0;
+UPDATE users SET role = 'admin' WHERE documento = '1092209864';
+UPDATE users SET role = 'admin' WHERE email = 'paulo@sena.edu.co';
+SET SQL_SAFE_UPDATES=1;
+
+SELECT id, documento, name, email, role FROM users 
+WHERE documento = '1092209864' OR email = 'paulo@sena.edu.co';

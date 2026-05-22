@@ -53,6 +53,7 @@ app.use('/api/system', systemRouter);
 // Si se registra antes, los errores de las rutas no llegarán aquí
 app.use(errorMiddleware);
 
+// Escucha en todas las interfaces de red (accesible en LAN)
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor escuchando en http://localhost:${PORT}`);
 });
