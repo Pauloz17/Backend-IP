@@ -9,15 +9,49 @@
 
 import pool from '../database/db.connection.js';
 
-// campos que se pueden actualizar desde el exterior
-// cualquier otro campo que llegue en el body se ignora silenciosamente
-const CAMPOS_ACTUALIZABLES = ['documento', 'name', 'email'];
+// Campos que se pueden actualizar desde el exterior vía PUT /api/users/:id.
+// Cualquier otro campo que llegue en el body se ignora silenciosamente.
+//
+// REGLA DE NEGOCIO: documento, email y name son DATOS PERSONALES inmutables
+// tras el registro. Ninguno está en esta lista; documento y email también
+// están protegidos por el trigger SQL tr_users_immutability como defensa
+// en profundidad (bloquea incluso UPDATE directos en Workbench).
+const CAMPOS_ACTUALIZABLES = [];
 
-// RF03 — READ: retorna todos los usuarios de la tabla users
-// el arreglo completo se usa en GET /api/users
+// RF03 — READ: retorna los usuarios de la tabla users con sus roles agregados.
+//
+// REGLA DE NEGOCIO (rbac.sql, Consulta 2):
+//   Los usuarios "admin puros" (que SOLO tienen el rol admin) NO aparecen
+//   en la lista. Los admins solo se ven si tienen al menos otro rol
+//   adicional (ej. admin + instructor). Los usuarios sin rol admin
+//   siempre se incluyen.
+//
+// El HAVING aplica las dos condiciones:
+//   - Usuarios sin rol asignado (roles_csv NULL) → se incluyen
+//   - Usuarios cuyo conjunto de roles NO contiene 'admin' → se incluyen
+//   - Usuarios con 'admin' pero también otros roles → se incluyen
+//   - Usuarios con 'admin' como único rol → se ocultan
+//
+// GROUP_CONCAT junta los nombres separados por coma; luego JS los separa en un array.
 export async function getAllUsers() {
-    const [rows] = await pool.query('SELECT * FROM users');
-    return rows;
+    const [rows] = await pool.query(
+        `SELECT
+            u.*,
+            GROUP_CONCAT(r.name ORDER BY r.name SEPARATOR ',') AS roles_csv,
+            COUNT(DISTINCT r.id) AS total_roles
+         FROM users u
+         LEFT JOIN user_roles ur ON ur.user_id = u.id
+         LEFT JOIN roles      r  ON r.id       = ur.role_id
+         GROUP BY u.id
+         HAVING
+            roles_csv IS NULL
+            OR NOT FIND_IN_SET('admin', roles_csv)
+            OR (FIND_IN_SET('admin', roles_csv) AND total_roles > 1)`
+    );
+    return rows.map(({ roles_csv, total_roles, ...rest }) => ({
+        ...rest,
+        roles: roles_csv ? roles_csv.split(',') : [],
+    }));
 }
 
 // RF03 — READ: busca un usuario por su id numérico
@@ -52,23 +86,19 @@ export async function createUser({ documento, name, email }) {
     return getUserById(result.insertId);
 }
 
-// actualiza los campos de un usuario existente
-// solo se permiten los campos definidos en CAMPOS_ACTUALIZABLES
-// cualquier otro campo que llegue en el body se ignora para evitar corrupción de datos
+// actualiza los campos de un usuario existente.
+// Solo se permiten los campos definidos en CAMPOS_ACTUALIZABLES (actualmente
+// vacío por la regla de inmutabilidad de datos personales). Cualquier otro
+// campo que llegue en el body se ignora silenciosamente.
 export async function updateUser(id, campos) {
     const existente = await getUserById(id);
     if (!existente) return null;
 
-    // Permitir actualizar el campo 'activo' para soft delete
     const camposFiltrados = {};
     for (const campo of CAMPOS_ACTUALIZABLES) {
         if (campos[campo] !== undefined) {
             camposFiltrados[campo] = campos[campo];
         }
-    }
-    // Permitir explícitamente el campo 'activo' (soft delete)
-    if (campos.activo !== undefined) {
-        camposFiltrados.activo = campos.activo;
     }
     // si no hay campos válidos no se ejecuta el UPDATE
     if (Object.keys(camposFiltrados).length === 0) return existente;
@@ -112,22 +142,57 @@ export async function getUserByEmail(email) {
 // Retorna el objeto completo del usuario recién creado (incluyendo password
 // para que registerService pueda excluirlo antes de responder al cliente).
 export async function createUserWithPassword({ name, documento, email, password, role = 'user' }) {
-    // INSERT con los 5 campos: los 3 básicos + password hasheada + role
     const [result] = await pool.query(
         'INSERT INTO users (name, documento, email, password, role) VALUES (?, ?, ?, ?, ?)',
         [name, documento, email, password, role]
     );
-    // result.insertId es el id AUTO_INCREMENT que MySQL asignó a la nueva fila
-    // Se usa getUserById (ya existe en este archivo) para retornar el objeto completo
-    return getUserById(result.insertId);
+    const userId = result.insertId;
+    // 2. SOPORTE MULTI-ROL: Asociar el rol inicial en la tabla pivote user_roles
+    // Buscamos el ID del rol solicitado en la tabla roles
+    const [rolesFound] = await pool.query('SELECT id FROM roles WHERE name = ?', [role]);
+    
+    if (rolesFound.length > 0) {
+        // Insertamos la relación en la tabla pivote
+        await pool.query(
+            'INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)',
+            [userId, rolesFound[0].id]
+        );
+    }
+
+    // Retornar el objeto completo incluyendo los campos generados por la BD
+    return getUserById(userId);
 }
 
-// elimina un usuario de la tabla users
-// primero guarda el objeto para retornarlo y confirmar qué se eliminó
+// elimina un usuario de la tabla users.
+// Reglas de negocio:
+//   - Si el usuario tiene tareas que aún NO están en estado 'completada',
+//     se bloquea el borrado (regla: no perder trazabilidad de trabajo pendiente).
+//     Devuelve { error, codigo: 409 } para que el controlador responda 409 Conflict.
+//   - Si el id no existe, retorna null para que el controlador responda 404.
+//   - En cualquier otro caso elimina físicamente la fila y retorna el objeto eliminado.
 export async function deleteUser(id) {
     const aEliminar = await getUserById(id);
     if (!aEliminar) return null;
-    // Hard delete: elimina físicamente el usuario
+
+    // Contar tareas del usuario que NO están completadas.
+    // JOIN contra task_assignees (3FN): se cuentan las tareas distintas en las
+    // que el usuario aparece como asignado y cuyo estado no es 'completada'.
+    const [filas] = await pool.query(
+        `SELECT COUNT(DISTINCT t.id) AS cantidad
+         FROM tasks t
+         INNER JOIN task_assignees ta ON ta.task_id = t.id
+         WHERE ta.user_id = ?
+           AND t.status <> 'completada'`,
+        [Number(id)]
+    );
+    const tareasAbiertas = filas[0].cantidad;
+    if (tareasAbiertas > 0) {
+        return {
+            error: `No se puede eliminar a "${aEliminar.name}": tiene ${tareasAbiertas} tarea(s) sin completar`,
+            codigo: 409,
+        };
+    }
+
     await pool.query('DELETE FROM users WHERE id = ?', [Number(id)]);
     return aEliminar;
 }
@@ -147,16 +212,72 @@ export async function updateUserRole(id, role) {
     const existente = await getUserById(id);
     if (!existente) return null;
 
-    // UPDATE solo modifica el campo role, no el updated_up timestamp
-    // mysql2 reemplaza los ? por los valores de forma segura (evita SQL injection)
+    // 1. Actualizar el campo legacy en la tabla principal
     await pool.query(
         'UPDATE users SET role = ? WHERE id = ?',
         [role, Number(id)]
     );
 
-    // Retornar el usuario con los datos actualizados desde MySQL
-    // getUserById incluye todos los campos excepto que el controlador los filtre
+    // 2. Sincronizar con la tabla RBAC user_roles (Soporte Multi-Rol)
+    const [rolesFound] = await pool.query('SELECT id FROM roles WHERE name = ?', [role]);
+    if (rolesFound.length > 0) {
+        await pool.query('DELETE FROM user_roles WHERE user_id = ?', [Number(id)]);
+        await pool.query(
+            'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)',
+            [Number(id), rolesFound[0].id]
+        );
+    }
+
     return getUserById(id);
+}
+
+// ── HELPER INTERNO: SINCRONIZAR CAMPO LEGACY users.role ─────────────────────
+// El campo VARCHAR users.role todavía lo usa el JWT y requireAdmin. Después
+// de cualquier mutación en user_roles hay que dejarlo coherente con el rol
+// de mayor prioridad del usuario. Prioridad: admin > instructor > user.
+async function syncLegacyUserRole(userId) {
+    const nombres = await getUserRoleNames(userId);
+    if (nombres.length === 0) return;
+    const prioridad = ['admin', 'instructor', 'user'];
+    const legacyRole = prioridad.find(p => nombres.includes(p)) || nombres[0];
+    await pool.query('UPDATE users SET role = ? WHERE id = ?', [legacyRole, Number(userId)]);
+}
+
+// ── ASIGNAR ROL ADICIONAL ───────────────────────────────────────────────────
+// Permite que un usuario tenga múltiples roles simultáneamente sin borrar los anteriores.
+export async function addRoleToUser(userId, roleName) {
+    const [rolesFound] = await pool.query('SELECT id FROM roles WHERE name = ?', [roleName]);
+    if (rolesFound.length === 0) return null;
+
+    // INSERT IGNORE evita errores si el usuario ya tiene ese rol asignado
+    await pool.query(
+        'INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)',
+        [Number(userId), rolesFound[0].id]
+    );
+
+    await syncLegacyUserRole(userId);
+    return true;
+}
+
+// ── ELIMINAR ROL ESPECÍFICO ─────────────────────────────────────────────────
+// Bloquea quitar el último rol: un usuario sin roles no podría hacer nada.
+// Retorna { error } cuando el caller intenta quitar el único rol restante.
+export async function removeRoleFromUser(userId, roleName) {
+    const [rolesFound] = await pool.query('SELECT id FROM roles WHERE name = ?', [roleName]);
+    if (rolesFound.length === 0) return null;
+
+    const nombresActuales = await getUserRoleNames(userId);
+    if (nombresActuales.length <= 1 && nombresActuales.includes(roleName)) {
+        return { error: 'No se puede quitar el último rol del usuario' };
+    }
+
+    await pool.query(
+        'DELETE FROM user_roles WHERE user_id = ? AND role_id = ?',
+        [Number(userId), rolesFound[0].id]
+    );
+
+    await syncLegacyUserRole(userId);
+    return true;
 }
 
 // ── OBTENER ROLES Y PERMISOS DE UN USUARIO (RBAC) ────────────────────────────
@@ -217,6 +338,96 @@ export async function getUserRolesAndPermissions(userId) {
  
     // Object.values convierte el mapa de objetos a un arreglo de roles
     return Object.values(rolesMap);
+}
+
+// ── LISTAR TODOS LOS ROLES DEL SISTEMA ──────────────────────────────────────
+// Se usa en GET /api/roles para que el frontend pueda renderizar la lista
+// de roles disponibles (checkboxes en el modal de asignación).
+export async function getAllRoles() {
+    const [rows] = await pool.query(
+        'SELECT id, name, description FROM roles ORDER BY name'
+    );
+    return rows;
+}
+
+// ── OBTENER LOS NOMBRES DE LOS ROLES DE UN USUARIO ──────────────────────────
+// Devuelve solo el array de strings ['admin', 'instructor'] — pensado para
+// GET /api/users/:id/roles, que el frontend usa para precargar los checkboxes.
+export async function getUserRoleNames(userId) {
+    const [rows] = await pool.query(
+        `SELECT r.name
+         FROM user_roles ur
+         INNER JOIN roles r ON r.id = ur.role_id
+         WHERE ur.user_id = ?
+         ORDER BY r.name`,
+        [Number(userId)]
+    );
+    return rows.map(r => r.name);
+}
+
+// ── REEMPLAZAR EL SET COMPLETO DE ROLES DE UN USUARIO ───────────────────────
+// PUT /api/users/:id/roles — pensado para una UI con checkboxes que envía la
+// lista completa de roles que el usuario DEBE tener después del guardado.
+//
+// Estrategia: transacción para garantizar atomicidad — si algo falla, no
+// queda el usuario sin roles a la mitad de la operación.
+//   1. DELETE de todas las filas previas en user_roles para ese user_id
+//   2. INSERT en bloque de las nuevas filas (una por cada rol del array)
+//   3. Sincronizar el campo legacy users.role con el primer rol del array
+//      para que requireAdmin y el JWT sigan funcionando con clientes viejos
+export async function setUserRoles(userId, roleNames) {
+    const existente = await getUserById(userId);
+    if (!existente) return null;
+
+    // Resolver los IDs de los roles a partir de los nombres
+    const [rolesEncontrados] = await pool.query(
+        `SELECT id, name FROM roles WHERE name IN (?)`,
+        [roleNames]
+    );
+
+    // Si algún nombre no existe en la tabla roles, fallamos antes de tocar nada
+    if (rolesEncontrados.length !== roleNames.length) {
+        const nombresEncontrados = rolesEncontrados.map(r => r.name);
+        const noExisten = roleNames.filter(n => !nombresEncontrados.includes(n));
+        return { error: `Roles no existen en el sistema: ${noExisten.join(', ')}` };
+    }
+
+    // Transacción: si una sentencia falla, revertimos todo
+    const conexion = await pool.getConnection();
+    try {
+        await conexion.beginTransaction();
+
+        // 1. Borrar los roles actuales del usuario
+        await conexion.query(
+            'DELETE FROM user_roles WHERE user_id = ?',
+            [Number(userId)]
+        );
+
+        // 2. Insertar los nuevos roles en bloque
+        const valores = rolesEncontrados.map(r => [Number(userId), r.id]);
+        await conexion.query(
+            'INSERT INTO user_roles (user_id, role_id) VALUES ?',
+            [valores]
+        );
+
+        // 3. Sincronizar campo legacy users.role
+        //    Prioridad: admin > instructor > user (para que requireAdmin siga funcionando)
+        const prioridad = ['admin', 'instructor', 'user'];
+        const legacyRole = prioridad.find(p => roleNames.includes(p)) || roleNames[0];
+        await conexion.query(
+            'UPDATE users SET role = ? WHERE id = ?',
+            [legacyRole, Number(userId)]
+        );
+
+        await conexion.commit();
+    } catch (error) {
+        await conexion.rollback();
+        throw error;
+    } finally {
+        conexion.release();
+    }
+
+    return getUserById(userId);
 }
 
 // ── ACTUALIZAR CONTRASEÑA DE USUARIO ─────────────────────────────────────────

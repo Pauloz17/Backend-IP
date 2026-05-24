@@ -55,5 +55,5 @@ app.use(errorMiddleware);
 
 // Escucha en todas las interfaces de red (accesible en LAN)
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor escuchando en http://localhost:${PORT}`);
+    console.log(`Servidor escuchando en http://192.168.137.42:${PORT}`);
 });

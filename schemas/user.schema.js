@@ -54,19 +54,41 @@ export const createUserSchema = z.object({
 // Permite actualizar solo documento, solo name, solo email o cualquier combinación
 export const updateUserSchema = createUserSchema.partial();
 
-// ── SCHEMA PARA CAMBIAR ROL ──────────────────────────────────────────────────
+// ── SCHEMA PARA CAMBIAR ROL (LEGACY — single role) ──────────────────────────
 // PATCH /api/users/:id/role
 // Cuerpo esperado: { role: 'admin' | 'user' | 'instructor' }
-
-// Solo acepta los tres valores válidos del sistema.
-// validateSchema(changeRoleSchema) se aplica en la ruta correspondiente.
-// ACTUALIZACIÓN: se agrega 'instructor' como tercer rol válido del sistema
+// Mantiene compatibilidad con clientes que aún usan el endpoint single-role.
 export const changeRoleSchema = z.object({
     role: z.enum(
-        ['admin', 'user', 'instructor'],   // ← se agrega 'instructor'
+        ['admin', 'user', 'instructor'],
         {
             required_error: 'El rol es obligatorio',
             message:        "El rol debe ser: 'admin', 'user' o 'instructor'",
         }
     ),
+});
+
+// ── SCHEMA PARA AGREGAR UN ROL ADICIONAL ────────────────────────────────────
+// POST /api/users/:id/roles
+// Cuerpo: { role: 'admin' | 'user' | 'instructor' }
+// Agrega el rol al usuario SIN borrar los que ya tiene.
+export const assignRoleSchema = z.object({
+    role: z.enum(
+        ['admin', 'user', 'instructor'],
+        {
+            required_error: 'El rol es obligatorio',
+            message:        "El rol debe ser: 'admin', 'user' o 'instructor'",
+        }
+    ),
+});
+
+// ── SCHEMA PARA REEMPLAZAR EL SET COMPLETO DE ROLES ─────────────────────────
+// PUT /api/users/:id/roles
+// Cuerpo: { roles: ['admin', 'instructor'] }
+// Reemplaza la lista completa de roles del usuario. Ideal para UIs con checkboxes.
+// Debe contener al menos 1 rol — un usuario sin rol no podría hacer nada.
+export const setRolesSchema = z.object({
+    roles: z
+        .array(z.enum(['admin', 'user', 'instructor']))
+        .min(1, 'El usuario debe tener al menos un rol asignado'),
 });

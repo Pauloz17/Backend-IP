@@ -21,7 +21,12 @@ import {
     createUser          as insertUser,
     updateUser          as modifyUser,
     deleteUser          as removeUser,
-    updateUserRole,                          // ← nueva función
+    updateUserRole,
+    addRoleToUser,
+    removeRoleFromUser,
+    getUserRoleNames,
+    setUserRoles,
+    getAllRoles,
 } from '../models/user.model.js';
 
 import { getTasksByUserId } from '../models/task.model.js';
@@ -77,18 +82,36 @@ export const updateUser = catchAsync(async (req, res) => {
 });
 
 // DELETE /api/users/:id
-// Elimina un usuario y retorna confirmación
+// Elimina un usuario aplicando las reglas de negocio:
+//   1. El usuario autenticado NO puede eliminarse a sí mismo (403).
+//   2. El modelo bloquea el borrado si tiene tareas sin completar (409).
+//   3. Si el id no existe, responde 404.
+//
+// La ruta agrega verifyToken + requireAdmin antes de llegar aquí, así que
+// solo un admin autenticado puede invocar este endpoint.
 export const deleteUser = catchAsync(async (req, res) => {
-    const { id }           = req.params;
-    const usuarioEliminado = await removeUser(id);
+    const { id } = req.params;
 
-    if (!usuarioEliminado) {
+    // Regla 1: bloqueo de auto-eliminación
+    if (Number(req.usuario.id) === Number(id)) {
+        return errorResponse(res, 'No puedes eliminar tu propia cuenta', 403);
+    }
+
+    const resultado = await removeUser(id);
+
+    // Regla 3: id no existe
+    if (resultado === null) {
         return errorResponse(res, `Usuario con id ${id} no encontrado`, 404);
+    }
+
+    // Regla 2: el modelo bloqueó por tareas pendientes — propagamos el 409
+    if (resultado && resultado.error) {
+        return errorResponse(res, resultado.error, resultado.codigo);
     }
 
     return successResponse(
         res,
-        `Usuario "${usuarioEliminado.name}" eliminado correctamente`
+        `Usuario "${resultado.name}" eliminado correctamente`
     );
 });
 
@@ -197,6 +220,104 @@ export const changeUserPassword = catchAsync(async (req, res) => {
  
     // Actualizar la contraseña en la BD
     await updateUserPassword(Number(id), nuevaPasswordHasheada);
- 
+
     return successResponse(res, 'Contraseña actualizada correctamente', null);
+});
+
+// ── GET /api/users/available-roles ───────────────────────────────────────────
+// Lista los roles que el sistema reconoce (admin, instructor, user).
+// El frontend lo usa para renderizar los checkboxes del modal de asignación.
+export const listAvailableRoles = catchAsync(async (req, res) => {
+    const roles = await getAllRoles();
+    return successResponse(res, 'Roles disponibles obtenidos correctamente', roles);
+});
+
+// ── GET /api/users/:id/roles ─────────────────────────────────────────────────
+// Devuelve los roles que tiene asignados un usuario.
+// El frontend lo usa para precargar los checkboxes del modal de roles.
+export const getUserRoles = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const usuario = await findUserById(id);
+    if (!usuario) {
+        return errorResponse(res, `Usuario con id ${id} no encontrado`, 404);
+    }
+    const roles = await getUserRoleNames(id);
+    return successResponse(res, 'Roles del usuario obtenidos correctamente', { userId: Number(id), roles });
+});
+
+// ── POST /api/users/:id/roles ────────────────────────────────────────────────
+// Agrega un rol al usuario SIN borrar los que ya tiene.
+// Body: { role: 'admin' | 'user' | 'instructor' } (validado por assignRoleSchema)
+export const addUserRole = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    const usuario = await findUserById(id);
+    if (!usuario) {
+        return errorResponse(res, `Usuario con id ${id} no encontrado`, 404);
+    }
+
+    const resultado = await addRoleToUser(id, role);
+    if (resultado === null) {
+        return errorResponse(res, `El rol '${role}' no existe en el sistema`, 400);
+    }
+
+    const roles = await getUserRoleNames(id);
+    return successResponse(
+        res,
+        `Rol '${role}' asignado a ${usuario.name} correctamente`,
+        { userId: Number(id), roles }
+    );
+});
+
+// ── DELETE /api/users/:id/roles/:roleName ────────────────────────────────────
+// Quita un rol específico del usuario sin tocar los demás.
+// Bloquea quitar el último rol (un usuario sin roles no puede operar).
+export const deleteUserRole = catchAsync(async (req, res) => {
+    const { id, roleName } = req.params;
+
+    const usuario = await findUserById(id);
+    if (!usuario) {
+        return errorResponse(res, `Usuario con id ${id} no encontrado`, 404);
+    }
+
+    const resultado = await removeRoleFromUser(id, roleName);
+    if (resultado === null) {
+        return errorResponse(res, `El rol '${roleName}' no existe en el sistema`, 400);
+    }
+    if (resultado && resultado.error) {
+        return errorResponse(res, resultado.error, 400);
+    }
+
+    const roles = await getUserRoleNames(id);
+    return successResponse(
+        res,
+        `Rol '${roleName}' removido de ${usuario.name} correctamente`,
+        { userId: Number(id), roles }
+    );
+});
+
+// ── PUT /api/users/:id/roles ─────────────────────────────────────────────────
+// Reemplaza la lista completa de roles del usuario por la que llega en el body.
+// Pensado para una UI con checkboxes que envía el set final tras "Guardar".
+// Body: { roles: ['admin', 'instructor'] } (validado por setRolesSchema)
+export const replaceUserRoles = catchAsync(async (req, res) => {
+    const { id } = req.params;
+    const { roles } = req.body;
+
+    const resultado = await setUserRoles(id, roles);
+    if (resultado === null) {
+        return errorResponse(res, `Usuario con id ${id} no encontrado`, 404);
+    }
+    if (resultado && resultado.error) {
+        return errorResponse(res, resultado.error, 400);
+    }
+
+    const rolesActuales = await getUserRoleNames(id);
+    const { password: _ignorado, ...usuarioSinPassword } = resultado;
+    return successResponse(
+        res,
+        `Roles de ${resultado.name} actualizados correctamente`,
+        { ...usuarioSinPassword, roles: rolesActuales }
+    );
 });

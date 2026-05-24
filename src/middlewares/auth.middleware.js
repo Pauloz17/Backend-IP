@@ -70,9 +70,14 @@ export function requireAdmin(req, res, next) {
         return res.status(401).json({ error: 'Acceso denegado: Token requerido' });
     }
 
-    // Verificar que el rol en el payload del JWT sea 'admin'
-    // El role queda en el token al hacer login y no cambia hasta el próximo login
-    if (req.usuario.role !== 'admin') {
+    // El JWT puede traer 'admin' en dos lugares:
+    //   - req.usuario.role  → campo legacy (string) por compatibilidad con tokens viejos
+    //   - req.usuario.roles → array de roles del sistema RBAC multi-rol
+    // Aceptamos cualquiera de los dos para no romper sesiones existentes.
+    const esAdminLegacy = req.usuario.role === 'admin';
+    const esAdminRbac   = Array.isArray(req.usuario.roles) && req.usuario.roles.includes('admin');
+
+    if (!esAdminLegacy && !esAdminRbac) {
         return res.status(403).json({
             error: 'Acceso denegado: Se requieren permisos de administrador para esta acción',
         });

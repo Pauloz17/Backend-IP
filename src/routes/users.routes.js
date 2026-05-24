@@ -25,23 +25,27 @@ import {
     updateUser,
     deleteUser,
     getUserTasks,
-    changeUserRole,          // ← nueva función
-    changeUserPassword 
+    changeUserRole,
+    changeUserPassword,
+    listAvailableRoles,
+    getUserRoles,
+    addUserRole,
+    deleteUserRole,
+    replaceUserRoles,
 } from '../controller/users.controller.js';
 
-// Se importa el middleware genérico de validación (creado por Sebastián)
 import { validateSchema } from '../middlewares/validator.middleware.js';
 
-// Se importan los esquemas de validación para las operaciones de usuarios
 import {
     createUserSchema,
     updateUserSchema,
+    changeRoleSchema,
+    assignRoleSchema,
+    setRolesSchema,
 } from '../../schemas/user.schema.js';
 
-import { requireAdmin } from '../middlewares/auth.middleware.js';
-import { changeRoleSchema } from '../../schemas/user.schema.js';
-
-import { verifyToken } from '../middlewares/auth.middleware.js';
+import { verifyToken, requireAdmin } from '../middlewares/auth.middleware.js';
+import { checkPermission } from '../middlewares/authorization.middleware.js';
 
 const router = Router();
 
@@ -56,14 +60,28 @@ router.post('/', validateSchema(createUserSchema), createUser);
 
 // ── RUTAS CON SEGMENTO FIJO AL FINAL (van ANTES de /:id) ─────────────────────
 
+// GET /api/users/available-roles — catálogo de roles del sistema (admin/instructor/user).
+// CRÍTICO: va ANTES de /:id para que Express no interprete "available-roles" como un id.
+router.get('/available-roles', listAvailableRoles);
+
 // GET /api/users/by-document/:documento — busca un usuario por su número de documento.
-// CRÍTICO: va ANTES de /:id para que Express no interprete "by-document" como un id.
 router.get('/by-document/:documento', getUserByDocumento);
 
 // GET /api/users/:userId/tasks — retorna todas las tareas asignadas a un usuario.
-// CORRECCIÓN: esta ruta va ANTES de /:id para que Express no interprete
-// el segmento "tasks" como el valor del parámetro id.
 router.get('/:userId/tasks', getUserTasks);
+
+// ── RUTAS RBAC MULTI-ROL ────────────────────────────────────────────────────
+// Estas rutas trabajan sobre el array de roles del usuario en la tabla pivote
+// user_roles. Conviven con el endpoint legacy PATCH /:id/role (single-role).
+//
+// GET    /:id/roles                    — roles actuales del usuario (precargar checkboxes)
+// POST   /:id/roles                    — agregar un rol sin borrar los demás
+// DELETE /:id/roles/:roleName          — quitar un rol específico (bloquea si es el último)
+// PUT    /:id/roles                    — reemplazar el set completo de roles (guardar checkboxes)
+router.get('/:id/roles',  verifyToken, requireAdmin, getUserRoles);
+router.post('/:id/roles', verifyToken, requireAdmin, validateSchema(assignRoleSchema), addUserRole);
+router.delete('/:id/roles/:roleName', verifyToken, requireAdmin, deleteUserRole);
+router.put('/:id/roles',  verifyToken, requireAdmin, validateSchema(setRolesSchema), replaceUserRoles);
 
 // ── RUTAS CON PARÁMETRO DINÁMICO /:id (van DESPUÉS de las específicas) ────────
 
@@ -79,8 +97,11 @@ router.get('/:id', getUserById);
 // updateUserSchema usa .partial() — los campos son opcionales pero si vienen, se validan
 router.put('/:id', validateSchema(updateUserSchema), updateUser);
 
-// DELETE /api/users/:id — elimina un usuario del sistema (no requiere validación de body)
-router.delete('/:id', deleteUser);
+// DELETE /api/users/:id — elimina un usuario del sistema.
+// Requiere: token válido + permiso RBAC users.delete.
+// El controlador además bloquea la auto-eliminación y respeta la regla
+// "usuarios con tareas pendientes no se pueden eliminar" (409 Conflict).
+router.delete('/:id', verifyToken, checkPermission('users.delete'), deleteUser);
 
 // PATCH /api/users/:id/role — cambia el rol de un usuario
 // requireAdmin verifica adicionalmente que el usuario autenticado sea admin

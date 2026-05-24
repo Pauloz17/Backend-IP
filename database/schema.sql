@@ -7,7 +7,7 @@
 -- INSTRUCCIONES:
 -- Este archivo lo ejecutan con la conexión app_user en Workbench.
 -- Antes, ejecuten el bloque en la conexion de root (SI NO LO HAN HECHO YA):
-
+-- ORDEN: 1. connection.sql -> 2. schema.sql (Este archivo) -> 3. rbac.sql
 -- CREATE DATABASE IF NOT EXISTS gestion_tareas_sena;
 -- CREATE USER IF NOT EXISTS 'app_user'@'localhost' IDENTIFIED BY 'Paulo2024*';
 -- GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'app_user'@'localhost';
@@ -27,20 +27,51 @@ CREATE TABLE IF NOT EXISTS users (
     id          INT          NOT NULL AUTO_INCREMENT,
     documento   VARCHAR(20)  NOT NULL UNIQUE,
     name        VARCHAR(100) NOT NULL,
-    email       VARCHAR(100) NOT NULL,
+    email       VARCHAR(100) NOT NULL UNIQUE,
     password    VARCHAR(255) NULL,
     role        VARCHAR(20)  NOT NULL DEFAULT 'user',
     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-    updated_up  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
 
 -- ============================================================
+-- REGLA DE NEGOCIO: INMUTABILIDAD DE DATOS PERSONALES
+-- Protege documento, email y nombre para que no sean alterados tras el registro.
+-- Si ya tienes la versión anterior del trigger en tu BD, primero ejecuta:
+--     DROP TRIGGER IF EXISTS tr_users_immutability;
+-- y luego este bloque para recrearlo con la nueva regla del nombre.
+-- ============================================================
+DROP TRIGGER IF EXISTS tr_users_immutability;
+DELIMITER //
+CREATE TRIGGER tr_users_immutability
+BEFORE UPDATE ON users
+FOR EACH ROW
+BEGIN
+    IF NEW.documento <> OLD.documento THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Regla de Privacidad SENA: El documento no puede ser modificado.';
+    END IF;
+    IF NEW.email <> OLD.email THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Regla de Privacidad SENA: El correo electrónico no puede ser modificado.';
+    END IF;
+    IF NEW.name <> OLD.name THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Regla de Privacidad SENA: El nombre no puede ser modificado.';
+    END IF;
+END; //
+DELIMITER ;
+
+-- ============================================================
 -- TABLA: tasks
--- assigned_users: arreglo de IDs guardado como JSON (sin FK externa)
 -- comment: campo opcional para que el usuario anote observaciones
 -- status valores válidos:
 --   pendiente | en_progreso | pendiente_aprobacion | completada
+--
+-- NOTA 3FN: la asignación de usuarios a una tarea NO va en esta tabla
+-- (sería un atributo multivaluado, violación de 1FN). Se modela con la
+-- tabla pivote `task_assignees` declarada más abajo.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS tasks (
     id              INT          NOT NULL AUTO_INCREMENT,
@@ -48,10 +79,35 @@ CREATE TABLE IF NOT EXISTS tasks (
     description     TEXT,
     status          VARCHAR(30)  NOT NULL DEFAULT 'pendiente',
     comment         TEXT         NULL,
-    assigned_users  JSON         NOT NULL DEFAULT (JSON_ARRAY()),
     created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-    updated_up      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
+);
+
+-- ============================================================
+-- TABLA: task_assignees (pivot tasks <-> users)
+-- Relación M:N normalizada en 3FN entre tareas y usuarios asignados.
+-- Reemplaza el antiguo campo JSON `tasks.assigned_users`.
+--
+-- ON DELETE CASCADE en ambas FKs:
+--   - Si se elimina una tarea, sus asignaciones desaparecen.
+--   - Si se elimina un usuario, deja de estar asignado a sus tareas.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS task_assignees (
+    task_id    INT NOT NULL,
+    user_id    INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (task_id, user_id),
+    CONSTRAINT fk_ta_task
+        FOREIGN KEY (task_id)
+        REFERENCES tasks (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_ta_user
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
 
 -- ============================================================
@@ -116,60 +172,14 @@ CREATE TABLE IF NOT EXISTS user_roles (
         ON UPDATE CASCADE
 );
 
--- ============================================================
--- Datos iniciales RBAC (opcional)
--- Los INSERT IGNORE permiten ejecutar este archivo varias veces
--- sin duplicar filas.
--- ============================================================
-
-INSERT IGNORE INTO roles (name, description) VALUES
-    ('admin',       'Administrador del sistema — acceso total'),
-    ('user',        'Usuario estándar — gestiona sus propias tareas'),
-    ('instructor',  'Docente SENA — gestiona tareas y ve usuarios sin poder eliminarlos');
-
-INSERT IGNORE INTO permissions (code, description) VALUES
-    ('tasks.create',         'Crear nuevas tareas en el sistema'),
-    ('tasks.view.all',       'Ver todas las tareas del sistema'),
-    ('tasks.update',         'Editar cualquier tarea del sistema'),
-    ('tasks.delete.all',     'Eliminar permanentemente cualquier tarea del sistema'),
-    ('tasks.assign',         'Asignar usuarios a una tarea'),
-    ('tasks.status.update',  'Cambiar el estado de una tarea propia'),
-    ('users.view',           'Ver la lista de usuarios del sistema'),
-    ('users.edit',           'Editar datos de cualquier usuario'),
-    ('users.delete',         'Eliminar usuarios del sistema'),
-    ('users.assign.role',    'Cambiar el rol de un usuario');
-
--- Llenar role_permissions para los roles definidos arriba
-INSERT IGNORE INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM roles r, permissions p
-WHERE r.name = 'admin';
-
-INSERT IGNORE INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM roles r, permissions p
-WHERE r.name = 'instructor'
-  AND p.code IN (
-      'tasks.create',
-      'tasks.view.all',
-      'tasks.update',
-      'tasks.delete.all',
-      'tasks.assign',
-      'users.view'
-  );
-
-INSERT IGNORE INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM roles r, permissions p
-WHERE r.name = 'user'
-  AND p.code IN (
-      'tasks.status.update',
-      'tasks.view.all'
-  );
-
 -- NOTA: la asignación de usuarios específicos a roles (ej. admin a Paulo)
 -- debe realizarse después de que los usuarios existan en la tabla `users`.
 -- Ejemplo (ejecutar manualmente después de registrar los usuarios desde la API):
 -- UPDATE users SET role = 'admin' WHERE documento IN ('1092209864', '109679551');
 -- INSERT IGNORE INTO user_roles (user_id, role_id)
 -- SELECT u.id, r.id FROM users u, roles r WHERE u.documento IN ('1092209864', '109679551') AND r.name = 'admin';
+
+-- UPDATE users SET role = 'admin' WHERE documento = '1092209864';
+-- INSERT IGNORE INTO user_roles (user_id, role_id) 
+-- SELECT u.id, r.id FROM users u, roles r 
+-- WHERE u.documento = '1092209864' AND r.name = 'admin';

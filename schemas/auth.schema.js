@@ -92,13 +92,22 @@ export const registerSchema = z.object({
         .email('El correo electrónico no tiene un formato válido')
         .max(100, 'El correo no puede exceder los 100 caracteres'),
 
-    // password: obligatorio, mínimo 6 caracteres, máximo 100
-    // La misma regla que loginSchema.password para consistencia
+    // password: validación profesional — el registro exige una contraseña fuerte
+    // para reducir el riesgo de cuentas comprometidas (no se usa la regla más
+    // laxa del loginSchema porque el login es contra hashes ya creados).
+    //
+    // Reglas: mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número
+    // y 1 símbolo. Cada regex devuelve un mensaje en español apuntando al
+    // requisito que faltó, para que el frontend pueda mostrarlo tal cual.
     password: z
         .string({
             required_error:     'La contraseña es obligatoria',
             invalid_type_error: 'La contraseña debe ser una cadena de texto',
         })
-        .min(6,   'La contraseña debe tener al menos 6 caracteres')
-        .max(100, 'La contraseña no puede exceder los 100 caracteres'),
+        .min(8,   'La contraseña debe tener al menos 8 caracteres')
+        .max(100, 'La contraseña no puede exceder los 100 caracteres')
+        .regex(/[A-Z]/,            'La contraseña debe contener al menos una letra mayúscula')
+        .regex(/[a-z]/,            'La contraseña debe contener al menos una letra minúscula')
+        .regex(/\d/,               'La contraseña debe contener al menos un número')
+        .regex(/[^A-Za-z0-9]/,     'La contraseña debe contener al menos un símbolo (ej: !@#$%*)'),
 });

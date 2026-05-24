@@ -31,9 +31,10 @@ export async function hashearPassword(passwordPlano) {
 // Genera el token de corta duración (1h).
 // El payload incluye id, documento y role para que el middleware
 // pueda autorizar sin consultar la BD en cada petición.
-export function generarAccessToken(usuario) {
+export function generarAccessToken(usuario, roles = []) {
+    const roleNames = roles.map(r => r.name);
     return jwt.sign(
-        { id: usuario.id, documento: usuario.documento, role: usuario.role },
+        { id: usuario.id, documento: usuario.documento, role: usuario.role, roles: roleNames },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
     );
@@ -77,20 +78,14 @@ export async function loginService({ email, password }) {
     const passwordCorrecta = await bcrypt.compare(password, usuario.password);
     if (!passwordCorrecta) return null;
 
-    // 3. Generar tokens
-    const accessToken  = generarAccessToken(usuario);
+    // 3. Obtener los roles y permisos del usuario desde las tablas RBAC.
+    const roles = await getUserRolesAndPermissions(usuario.id);
+
+    // 4. Generar tokens incluyendo los roles para el payload del JWT
+    const accessToken  = generarAccessToken(usuario, roles);
     const refreshToken = generarRefreshToken(usuario);
  
-    // 4. Obtener los roles y permisos del usuario desde las tablas RBAC.
-    //    Se consulta la BD en lugar de incluirlos en el JWT para:
-    //    a) Mantener el token ligero (solo id, documento, role)
-    //    b) Reflejar cambios de roles en tiempo real sin necesidad de re-login
-    //    Si el usuario no tiene roles en user_roles (instalación legacy),
-    //    retorna un arreglo vacío y el sistema funciona con el campo `role` del JWT.
-    const roles = await getUserRolesAndPermissions(usuario.id);
- 
-    // 5. Retornar sin password — incluye los roles para que el frontend
-    //    pueda adaptar la UI según los permisos del usuario.
+    // 5. Retornar estructura compatible con el frontend
     return {
         accessToken,
         refreshToken,
@@ -100,10 +95,10 @@ export async function loginService({ email, password }) {
             role:      usuario.role,
             documento: usuario.documento,
             email:     usuario.email,
+            // Se anidan los roles dentro del objeto user para que el frontend
+            // pueda validar Array.isArray(datos.user.roles)
+            roles:     roles, 
         },
-        // roles es el arreglo de objetos { name, permissions: [] }
-        // El frontend puede usarlo para mostrar/ocultar elementos según permisos
-        roles,
     };
 }
 
