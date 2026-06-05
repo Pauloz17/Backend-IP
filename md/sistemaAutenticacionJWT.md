@@ -192,7 +192,7 @@ El archivo `.env` en la raíz del backend debe tener estas variables. **Este arc
 ```
 DB_HOST=localhost
 DB_PORT=3306
-DB_USER=app_user
+DB_USER=paulo_user
 DB_PASSWORD=tu_contraseña_de_mysql
 DB_NAME=gestion_tareas_sena
 

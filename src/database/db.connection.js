@@ -20,7 +20,7 @@ import mysql from 'mysql2/promise';
 const pool = mysql.createPool({
     host:     process.env.DB_HOST,      // localhost (del .env)
     port:     process.env.DB_PORT,      // 3306 (del .env)
-    user:     process.env.DB_USER,      // app_user (del .env)
+    user:     process.env.DB_USER,      // paulo_user (del .env)
     password: process.env.DB_PASSWORD,  // contraseña real (del .env)
     database: process.env.DB_NAME,      // gestion_tareas_sena (del .env)
     waitForConnections: true,           // las nuevas peticiones esperan si no hay conexión libre

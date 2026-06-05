@@ -41,7 +41,7 @@ El sistema tiene dos repositorios:
 servidor_backend_parejas/
 ├── database/
 │   ├── connection.sql   ← NUEVO: crea la BD y el usuario de conexión (ejecutar con root)
-│   └── schema.sql       ← tablas e inserts (ejecutar con app_user)
+│   └── schema.sql       ← tablas e inserts (ejecutar con paulo_user)
 ├── md/                  ← NUEVO: documentación técnica del proyecto
 │   ├── asignaciones_1/
 │   │   ├── asignacion_Isabella.md
@@ -134,7 +134,7 @@ Crear un archivo `.env` en la raíz del repositorio backend:
 ```
 DB_HOST=localhost
 DB_PORT=3306
-DB_USER=app_user
+DB_USER=paulo_user
 DB_PASSWORD=TU_CONTRASEÑA
 DB_NAME=gestion_tareas_sena
 ```
@@ -145,12 +145,12 @@ Ejecutar como root en MySQL Workbench:
 
 ```sql
 CREATE DATABASE IF NOT EXISTS gestion_tareas_sena;
-CREATE USER IF NOT EXISTS 'app_user'@'localhost' IDENTIFIED BY 'TU_CONTRASEÑA';
-GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'app_user'@'localhost';
+CREATE USER IF NOT EXISTS 'paulo_user'@'localhost' IDENTIFIED BY 'TU_CONTRASEÑA';
+GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'paulo_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Luego ejecutar `database/schema.sql` con la conexión `app_user` para crear las tablas e insertar los usuarios iniciales.
+Luego ejecutar `database/schema.sql` con la conexión `paulo_user` para crear las tablas e insertar los usuarios iniciales.
 
 ### Cómo ejecutar
 
@@ -327,8 +327,8 @@ Abrir MySQL Workbench → conexión `gestion_tareas_root` → ejecutar:
 
 ```sql
 CREATE DATABASE IF NOT EXISTS gestion_tareas_sena;
-CREATE USER IF NOT EXISTS 'app_user'@'localhost' IDENTIFIED BY 'TU_CONTRASEÑA';
-GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'app_user'@'localhost';
+CREATE USER IF NOT EXISTS 'paulo_user'@'localhost' IDENTIFIED BY 'TU_CONTRASEÑA';
+GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'paulo_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 ## Arquitectura de Base de Datos — v4.0
@@ -336,7 +336,7 @@ FLUSH PRIVILEGES;
 El sistema usa 3 archivos SQL separados que deben ejecutarse en este orden:
 
 ### 1. `database/connection.sql`
-Crea la base de datos `gestion_tareas_sena` y el usuario `app_user`.
+Crea la base de datos `gestion_tareas_sena` and the user `paulo_user`.
 Ejecutar con conexión de **root** en MySQL Workbench (solo si no se ha ejecutado antes).
 
 ### 2. `database/schema.sql`

@@ -4,17 +4,24 @@
 -- AUTORES: Paul Zapata y Isabella Garcia
 -- SENA - Técnico en Programación de Software
 -- ============================================================
--- INSTRUCCIONES:
--- Este archivo lo ejecutan con la conexión app_user en Workbench.
--- Antes, ejecuten el bloque en la conexion de root (SI NO LO HAN HECHO YA):
--- ORDEN: 1. connection.sql -> 2. schema.sql (Este archivo) -> 3. rbac.sql
--- CREATE DATABASE IF NOT EXISTS gestion_tareas_sena;
--- CREATE USER IF NOT EXISTS 'app_user'@'localhost' IDENTIFIED BY 'Paulo2024*';
--- GRANT ALL PRIVILEGES ON gestion_tareas_sena.* TO 'app_user'@'localhost';
--- FLUSH PRIVILEGES;
+-- PROPÓSITO:
+--   Este archivo crea todas las tablas principales del sistema de gestión de tareas.
+--   Usa CREATE TABLE IF NOT EXISTS para ser SEGURO: no borra BD ni tablas existentes.
+--
+-- QUÉ HACER AL LLEGAR A LA PC DE PRESENTACIÓN:
+--   1. Abre MySQL Workbench
+--   2. Conéctate con usuario: paulo_user (contraseña: Paulo2024*)
+--   3. Copia TODO este archivo (schema.sql)
+--   4. Pega en una NEW QUERY en Workbench
+--   5. Haz clic en el botón PLAY/Ejecutar
+--   6. Espera a que termine (debe decir "0 rows affected" o similar, SIN ERRORES)
+--   7. LUEGO: haz lo mismo con database/rbac.sql en otra query nueva
+--   8. LISTO - tu BD está lista
+--
+-- CONEXIÓN: paulo_user (la que ya tienes en el PC de presentación)
 -- ============================================================
 
--- Selecciona la base de datos del proyecto (en conexion de app_user)
+-- Selecciona la base de datos del proyecto (en conexion de paulo_user)
 USE gestion_tareas_sena;
 
 -- ============================================================
