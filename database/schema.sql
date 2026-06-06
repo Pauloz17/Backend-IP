@@ -179,14 +179,4 @@ CREATE TABLE IF NOT EXISTS user_roles (
         ON UPDATE CASCADE
 );
 
--- NOTA: la asignación de usuarios específicos a roles (ej. admin a Paulo)
--- debe realizarse después de que los usuarios existan en la tabla `users`.
--- Ejemplo (ejecutar manualmente después de registrar los usuarios desde la API):
--- UPDATE users SET role = 'admin' WHERE documento IN ('1092209864', '109679551');
--- INSERT IGNORE INTO user_roles (user_id, role_id)
--- SELECT u.id, r.id FROM users u, roles r WHERE u.documento IN ('1092209864', '109679551') AND r.name = 'admin';
 
--- UPDATE users SET role = 'admin' WHERE documento = '1092209864';
--- INSERT IGNORE INTO user_roles (user_id, role_id) 
--- SELECT u.id, r.id FROM users u, roles r 
--- WHERE u.documento = '1092209864' AND r.name = 'admin';

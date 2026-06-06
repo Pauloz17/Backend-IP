@@ -8,20 +8,12 @@
 --   Este archivo crea los roles, permisos y relaciones RBAC.
 --   Los datos se insertan en la BD (tablas ya existen desde schema.sql).
 --
--- QUÉ HACER AL LLEGAR A LA PC DE PRESENTACIÓN:
+-- QUÉ HACER:
 --   1. Abre Workbench → Conexión paulo_user
---   2. Haz click en el + para una NUEVA QUERY
---   3. Copia TODO este archivo (rbac.sql) 
---   4. Pega en la query nueva
---   5. Click en botón azul PLAY ▶
---   6. Espera a que termine (sin errores)
---   7. LISTO — Roles y permisos creados
---
--- LUEGO (después de registrar desde frontend):
---   - Nueva query
---   - Copia la sección \"ASIGNAR ROL ADMIN A paulo@sena.edu.co\" (abajo)
---   - Ejecuta
---   - LISTO — paulo@sena.edu.co es admin
+--   2. Copia TODO este archivo (rbac.sql)
+--   3. Pega en una nueva query
+--   4. Click en botón azul PLAY ▶ para ejecutar
+--   5. LISTO — Roles, permisos y asignaciones creadas
 -- ============================================================
 
 USE gestion_tareas_sena;
@@ -85,61 +77,4 @@ WHERE r.name = 'user'
       'tasks.view.all'
   );
 
--- ============================================================
--- PASO 4: ASIGNAR ROL ADMIN A paulo@sena.edu.co
--- ============================================================
--- INSTRUCCIONES:
---   1. Registra a paulo@sena.edu.co desde el FRONTEND con POST /api/auth/register
---      Body: {
---        "name": "Paulo",
---        "documento": "1092209864",
---        "email": "paulo@sena.edu.co",
---        "password": "TuContraseña123*"
---      }
---   2. Una vez registrado, ejecuta este bloque en una NUEVA QUERY
---
--- QUÉ HACE:
---   - Define el email del usuario
---   - Crea el rol 'admin' si no existe
---   - Vincula usuario con rol en tabla pivote user_roles
---   - Sincroniza el campo legacy users.role
---   - Verifica que la asignación fue correcta
--- ============================================================
 
--- Variable: el email del usuario que será admin
-SET @email_admin = 'paulo@sena.edu.co';
-
--- 1. Crear rol 'admin' si no existe (por seguridad)
-INSERT IGNORE INTO roles (name, description)
-VALUES ('admin', 'Administrador del sistema — acceso total');
-
--- 2. Vincular usuario con rol en tabla pivote (INSERT IGNORE previene duplicados)
-INSERT IGNORE INTO user_roles (user_id, role_id)
-SELECT u.id, r.id
-FROM users u
-JOIN roles r ON r.name = 'admin'
-WHERE u.email = @email_admin;
-
--- 3. Sincronizar campo legacy (necesario para JWT)
-UPDATE users
-SET role = 'admin'
-WHERE email = @email_admin;
-
--- 4. VERIFICACIÓN: mira si quedó admin correctamente
-SELECT
-    u.id,
-    u.email,
-    u.role AS 'rol_campo_legacy',
-    GROUP_CONCAT(r.name ORDER BY r.name SEPARATOR ', ') AS 'roles_asignados',
-    COUNT(DISTINCT r.id) AS 'total_roles'
-FROM users u
-LEFT JOIN user_roles ur ON ur.user_id = u.id
-LEFT JOIN roles r ON r.id = ur.role_id
-WHERE u.email = @email_admin
-GROUP BY u.id, u.email, u.role;
-
--- Resultado esperado: 
---   email = paulo@sena.edu.co
---   rol_campo_legacy = admin
---   roles_asignados = admin
---   total_roles = 1
