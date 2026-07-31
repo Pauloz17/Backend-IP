@@ -93,3 +93,15 @@ export function checkPermission(permiso) {
         next();
     };
 }
+
+// Permite que un usuario normal consulte solo sus tareas usando
+// /api/tasks/filter?userId=<su-id>. Si intenta cambiar el id en la URL, debe
+// tener el permiso global tasks.view.all para continuar.
+export function requireOwnTaskFilter(req, res, next) {
+    if (!req.usuario?.id) {
+        return res.status(401).json({ error: 'Acceso denegado: Token requerido' });
+    }
+
+    if (String(req.query.userId) === String(req.usuario.id)) return next();
+    return checkPermission('tasks.view.all')(req, res, next);
+}

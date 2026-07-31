@@ -95,6 +95,7 @@ export const registerSchema = z.object({
     // password: validación profesional — el registro exige una contraseña fuerte
     // para reducir el riesgo de cuentas comprometidas (no se usa la regla más
     // laxa del loginSchema porque el login es contra hashes ya creados).
+    // Política de seguridad: el aviso de error se muestra tal cual al frontend.
     //
     // Reglas: mínimo 8 caracteres, al menos 1 mayúscula, 1 minúscula, 1 número
     // y 1 símbolo. Cada regex devuelve un mensaje en español apuntando al
@@ -110,4 +111,27 @@ export const registerSchema = z.object({
         .regex(/[a-z]/,            'La contraseña debe contener al menos una letra minúscula')
         .regex(/\d/,               'La contraseña debe contener al menos un número')
         .regex(/[^A-Za-z0-9]/,     'La contraseña debe contener al menos un símbolo (ej: !@#$%*)'),
+});
+
+// Esquemas del flujo de recuperación. Validar antes del controlador evita
+// que valores incompletos o contraseñas débiles lleguen a la lógica sensible.
+export const forgotPasswordSchema = z.object({
+    email: z.string().email('El correo electrónico no tiene un formato válido').max(100),
+});
+
+export const verifyResetCodeSchema = z.object({
+    email: z.string().email('El correo electrónico no tiene un formato válido').max(100),
+    code: z.string().regex(/^\d{6}$/, 'El código debe tener exactamente 6 dígitos'),
+});
+
+export const resetPasswordSchema = z.object({
+    email: z.string().email('El correo electrónico no tiene un formato válido').max(100),
+    newPassword: z
+        .string()
+        .min(8, 'La contraseña debe tener al menos 8 caracteres')
+        .max(100, 'La contraseña no puede exceder los 100 caracteres')
+        .regex(/[A-Z]/, 'La contraseña debe contener al menos una letra mayúscula')
+        .regex(/[a-z]/, 'La contraseña debe contener al menos una letra minúscula')
+        .regex(/\d/, 'La contraseña debe contener al menos un número')
+        .regex(/[^A-Za-z0-9]/, 'La contraseña debe contener al menos un símbolo'),
 });

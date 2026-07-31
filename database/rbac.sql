@@ -33,6 +33,7 @@ INSERT IGNORE INTO permissions (code, description) VALUES
     -- Permisos sobre tareas
     ('tasks.create',         'Crear nuevas tareas en el sistema'),
     ('tasks.view.all',       'Ver todas las tareas del sistema'),
+    ('tasks.view.own',       'Ver solamente las tareas asignadas al usuario'),
     ('tasks.update',         'Editar cualquier tarea del sistema'),
     ('tasks.delete.all',     'Eliminar permanentemente cualquier tarea del sistema'),
     ('tasks.assign',         'Asignar usuarios a una tarea'),
@@ -67,14 +68,14 @@ WHERE r.name = 'instructor'
       'users.view'
   );
 
--- User: solo ver tareas y cambiar estado de las propias
+-- User: solo ver SUS tareas asignadas y cambiarles el estado
 INSERT IGNORE INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r, permissions p
 WHERE r.name = 'user'
   AND p.code IN (
       'tasks.status.update',
-      'tasks.view.all'
+      'tasks.view.own'
   );
 
 

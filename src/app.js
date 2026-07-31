@@ -18,11 +18,26 @@ import usersRouter from './routes/users.routes.js';
 import tasksRouter from './routes/tasks.routes.js';
 import systemRouter from './routes/system.routes.js';
 
+import os from 'os';
+
 const app = express();
 
 // habilita CORS para que el frontend pueda hacer peticiones al backend
 // sin esto el navegador bloquearía las peticiones con un error de origen cruzado
-app.use(cors({ origin: '*' }));
+// FRONTEND_ORIGINS admite una lista separada por comas. No se usa '*' porque
+// las peticiones de esta API transportan tokens JWT.
+const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+
+app.use(cors({
+    origin(origin, callback) {
+        // Postman no envía Origin; no se bloquea para facilitar pruebas de API.
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) return callback(null, true);
+        return callback(new Error('Origen no permitido por la política CORS'));
+    },
+}));
 
 // configura el servidor para recibir cuerpos de petición en formato JSON
 // necesario para leer req.body en los controladores (POST, PUT, PATCH)
@@ -39,10 +54,9 @@ app.get('/', (req, res) => {
 });
 
 // Ruta de autenticación — PÚBLICA (no requiere token todavía)
-// Karol agregará verifyToken a /api/users y /api/tasks en su rama
 app.use('/api/auth', authRouter);
 
-// Rutas ahora públicas — se eliminó el middleware verifyToken
+// Rutas protegidas / públicas
 app.use('/api/users', usersRouter);
 app.use('/api/tasks', tasksRouter);
 
@@ -55,5 +69,17 @@ app.use(errorMiddleware);
 
 // Escucha en todas las interfaces de red (accesible en LAN)
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor escuchando en http://192.168.137.42:${PORT}`);
+    let localIp = 'localhost';
+    const interfaces = os.networkInterfaces();
+    for (const devName in interfaces) {
+        const iface = interfaces[devName];
+        for (let i = 0; i < iface.length; i++) {
+            const alias = iface[i];
+            if (alias.family === 'IPv4' && !alias.internal) {
+                localIp = alias.address;
+                break;
+            }
+        }
+    }
+    console.log(`Servidor escuchando en http://${localIp}:${PORT}`);
 });

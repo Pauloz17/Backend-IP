@@ -14,7 +14,13 @@ import {
 } from '../controller/auth.controller.js';
 import { refresh }        from '../controller/auth.refresh.controller.js';
 import { validateSchema } from '../middlewares/validator.middleware.js';
-import { loginSchema, registerSchema } from '../../schemas/auth.schema.js';
+import {
+    loginSchema,
+    registerSchema,
+    forgotPasswordSchema,
+    verifyResetCodeSchema,
+    resetPasswordSchema,
+} from '../../schemas/auth.schema.js';
  
 const router = Router();
  
@@ -29,12 +35,12 @@ router.post('/register', validateSchema(registerSchema), register);
  
 // ── FLUJO DE RECUPERACIÓN DE CONTRASEÑA (3 pasos) ───────────────────────────
 // Paso 1: el usuario ingresa su email para recibir el código por Mailtrap
-router.post('/forgot-password', forgotPassword);
- 
+router.post('/forgot-password', validateSchema(forgotPasswordSchema), forgotPassword);
+
 // Paso 2: el usuario ingresa el código de 6 dígitos para verificarlo
-router.post('/verify-reset-code', verifyResetCode);
- 
+router.post('/verify-reset-code', validateSchema(verifyResetCodeSchema), verifyResetCode);
+
 // Paso 3: el usuario ingresa la nueva contraseña (requiere haber pasado el paso 2)
-router.post('/reset-password', resetPassword);
+router.post('/reset-password', validateSchema(resetPasswordSchema), resetPassword);
  
 export default router;
