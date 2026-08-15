@@ -239,3 +239,12 @@ export async function removeUserFromTask(taskId, userId) {
     );
     return getTaskById(taskId);
 }
+
+// Verifica si un usuario está asignado a una tarea
+export async function isUserAssignedToTask(taskId, userId) {
+    const [rows] = await pool.query(
+        'SELECT 1 FROM task_assignees WHERE task_id = ? AND user_id = ?',
+        [Number(taskId), Number(userId)]
+    );
+    return rows.length > 0;
+}

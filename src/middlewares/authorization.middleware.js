@@ -21,6 +21,14 @@
 //   Si al menos un rol lo tiene, se permite el acceso.
  
 import { getUserRolesAndPermissions } from '../models/user.model.js';
+import { isUserAssignedToTask } from '../models/task.model.js';
+
+// Helper reutilizable: consulta permisos actuales en BD, no datos manipulables
+// del localStorage ni un rol antiguo incluido dentro del token.
+export async function userHasPermission(userId, permiso) {
+    const roles = await getUserRolesAndPermissions(userId);
+    return roles.some(rol => Array.isArray(rol.permissions) && rol.permissions.includes(permiso));
+}
  
 // checkPermission — Closure que recibe el código del permiso requerido
 // y retorna el middleware de Express (req, res, next).
@@ -104,4 +112,18 @@ export function requireOwnTaskFilter(req, res, next) {
 
     if (String(req.query.userId) === String(req.usuario.id)) return next();
     return checkPermission('tasks.view.all')(req, res, next);
+}
+
+// Autoriza a administradores/instructores con tasks.update o al usuario que
+// realmente esta asignado a la tarea. Es defensa contra cambiar /tasks/12 por
+// /tasks/13 directamente desde DevTools o una herramienta externa.
+export async function requireTaskAssigneeOrUpdatePermission(req, res, next) {
+    if (!req.usuario?.id) {
+        return res.status(401).json({ error: 'Acceso denegado: Token requerido' });
+    }
+
+    if (await userHasPermission(req.usuario.id, 'tasks.update')) return next();
+
+    if (await isUserAssignedToTask(req.params.id, req.usuario.id)) return next();
+    return res.status(403).json({ error: 'Acceso denegado: la tarea no esta asignada al usuario autenticado' });
 }

@@ -29,7 +29,11 @@ import {
 // Se importa el middleware genérico de validación
 import { validateSchema } from '../middlewares/validator.middleware.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
-import { checkPermission, requireOwnTaskFilter } from '../middlewares/authorization.middleware.js';
+import {
+    checkPermission,
+    requireOwnTaskFilter,
+    requireTaskAssigneeOrUpdatePermission,
+} from '../middlewares/authorization.middleware.js';
 
 // Se importan los esquemas de validación para cada operación de tareas
 import {
@@ -63,11 +67,11 @@ router.get('/', verifyToken, checkPermission('tasks.view.all'), getTasks);
 router.post('/', verifyToken, checkPermission('tasks.create'), validateSchema(createTaskSchema), createTask);
 
 // GET    /api/tasks/:id — obtiene una tarea por id (no requiere validación de body)
-router.get('/:id', verifyToken, checkPermission('tasks.view.all'), getTaskById);
+router.get('/:id', verifyToken, requireTaskAssigneeOrUpdatePermission, getTaskById);
 
 // PUT    /api/tasks/:id — actualiza una tarea completa
 // updateTaskSchema usa .partial() así que todos los campos son opcionales
-router.put('/:id', verifyToken, checkPermission('tasks.update'), validateSchema(updateTaskSchema), updateTask);
+router.put('/:id', verifyToken, requireTaskAssigneeOrUpdatePermission, validateSchema(updateTaskSchema), updateTask);
 
 // DELETE /api/tasks/:id — elimina una tarea (no requiere validación de body)
 router.delete('/:id', verifyToken, checkPermission('tasks.delete.all'), deleteTask);
@@ -76,7 +80,7 @@ router.delete('/:id', verifyToken, checkPermission('tasks.delete.all'), deleteTa
 
 // PATCH /api/tasks/:id/status — cambia solo el estado
 // Solo valida que status tenga uno de los tres valores permitidos
-router.patch('/:id/status', verifyToken, checkPermission('tasks.status.update'), validateSchema(updateTaskStatusSchema), updateTaskStatus);
+router.patch('/:id/status', verifyToken, requireTaskAssigneeOrUpdatePermission, validateSchema(updateTaskStatusSchema), updateTaskStatus);
 
 // ── ASIGNACIÓN DE USUARIOS ──
 

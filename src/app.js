@@ -18,7 +18,6 @@ import usersRouter from './routes/users.routes.js';
 import tasksRouter from './routes/tasks.routes.js';
 import systemRouter from './routes/system.routes.js';
 
-import os from 'os';
 
 const app = express();
 
@@ -34,7 +33,7 @@ const allowedOrigins = (process.env.FRONTEND_ORIGINS || 'http://localhost:5173,h
 app.use(cors({
     origin(origin, callback) {
         // Postman no envía Origin; no se bloquea para facilitar pruebas de API.
-        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) return callback(null, true);
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
         return callback(new Error('Origen no permitido por la política CORS'));
     },
 }));
@@ -68,18 +67,9 @@ app.use('/api/system', systemRouter);
 app.use(errorMiddleware);
 
 // Escucha en todas las interfaces de red (accesible en LAN)
+// NOTA: Cambia la IP de abajo por la IP local de tu máquina en la red.
+// Para conocer tu IP: abre una terminal y escribe 'ipconfig' (Windows)
+// y busca la línea "Dirección IPv4" de tu adaptador de red activo.
 app.listen(PORT, '0.0.0.0', () => {
-    let localIp = 'localhost';
-    const interfaces = os.networkInterfaces();
-    for (const devName in interfaces) {
-        const iface = interfaces[devName];
-        for (let i = 0; i < iface.length; i++) {
-            const alias = iface[i];
-            if (alias.family === 'IPv4' && !alias.internal) {
-                localIp = alias.address;
-                break;
-            }
-        }
-    }
-    console.log(`Servidor escuchando en http://${localIp}:${PORT}`);
+    console.log(`Servidor escuchando en http://192.168.137.42:${PORT}`);
 });

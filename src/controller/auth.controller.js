@@ -9,7 +9,7 @@ import { successResponse, errorResponse } from '../utils/response.util.js';
 import { loginService, registerService }  from '../services/auth.service.js';
 
 import { guardarCodigo, verificarCodigo, codigoEsVerificado, eliminarCodigo } from '../utils/resetCodes.js';
-import { enviarCodigoRecuperacion } from '../services/email.service.js';
+import { enviarCodigoRecuperacion, enviarNotificacionCambioPassword } from '../services/email.service.js';
 import { getUserByEmail }           from '../models/user.model.js';
 import { updateUserPassword }       from '../models/user.model.js';
 import { hashearPassword }          from '../services/auth.service.js';
@@ -163,6 +163,9 @@ export const resetPassword = catchAsync(async (req, res) => {
  
     // Actualizar la contraseña en la BD
     await updateUserPassword(usuario.id, passwordHasheada);
+
+    // Aviso de seguridad: no revela la contraseña, solo confirma el cambio.
+    await enviarNotificacionCambioPassword(emailNormalizado);
  
     // Limpiar el código del Map de memoria — ya fue usado, no se puede reutilizar
     eliminarCodigo(emailNormalizado);

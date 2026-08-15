@@ -30,3 +30,25 @@ export async function enviarCodigoRecuperacion(destinatario, codigo) {
         return false;
     }
 }
+
+// Notifica el cambio sin enviar la contraseña ni el hash. Sirve para que el
+// propietario detecte un cambio que no realizó y pueda pedir ayuda de inmediato.
+export async function enviarNotificacionCambioPassword(destinatario) {
+    try {
+        await transporter.sendMail({
+            from: process.env.MAIL_FROM || '"Sistema Gestor" <no-reply@gestor.com>',
+            to: destinatario,
+            subject: 'Tu contraseña fue actualizada - Sistema Gestor',
+            html: `
+                <h2>Contraseña actualizada</h2>
+                <p>La contraseña de tu cuenta fue cambiada correctamente.</p>
+                <p>Si no realizaste este cambio, contacta al administrador de inmediato.</p>
+            `,
+        });
+        return true;
+    } catch (error) {
+        // El cambio en BD ya fue exitoso; el correo no debe revertirlo.
+        console.error('Error enviando notificación de contraseña:', error.message);
+        return false;
+    }
+}

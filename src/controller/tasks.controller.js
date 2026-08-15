@@ -25,6 +25,7 @@ import {
     removeUserFromTask  as detachUser,
     filterTasks         as filterTasksModel
 } from '../models/task.model.js';
+import { userHasPermission } from '../middlewares/authorization.middleware.js';
 
 // GET /api/tasks
 // Retorna todas las tareas con el formato estándar
@@ -62,7 +63,18 @@ export const createTask = catchAsync(async (req, res) => {
 // Actualiza una tarea completa
 export const updateTask = catchAsync(async (req, res) => {
     const { id }           = req.params;
-    const campos           = req.body;
+    let campos             = req.body;
+
+    // Un usuario asignado puede actualizar su avance y comentario, pero no
+    // cambiar titulo, descripcion ni reasignar personas. Es una segunda capa:
+    // aunque altere el body desde el navegador, solo llegan estos dos campos al modelo.
+    const puedeEditarTodo = await userHasPermission(req.usuario.id, 'tasks.update');
+    if (!puedeEditarTodo) {
+        campos = {
+            ...(req.body.status !== undefined ? { status: req.body.status } : {}),
+            ...(req.body.comment !== undefined ? { comment: req.body.comment } : {}),
+        };
+    }
     const tareaActualizada = await modifyTask(id, campos);
 
     if (!tareaActualizada) {

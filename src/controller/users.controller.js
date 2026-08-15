@@ -32,6 +32,7 @@ import {
 import { getTasksByUserId } from '../models/task.model.js';
 
 import bcrypt from 'bcryptjs';
+import { enviarNotificacionCambioPassword } from '../services/email.service.js';
 import { updateUserPassword } from '../models/user.model.js';
 
 // GET /api/users
@@ -220,6 +221,9 @@ export const changeUserPassword = catchAsync(async (req, res) => {
  
     // Actualizar la contraseña en la BD
     await updateUserPassword(Number(id), nuevaPasswordHasheada);
+
+    // Se informa al correo registrado sin incluir datos sensibles.
+    await enviarNotificacionCambioPassword(usuario.email);
 
     return successResponse(res, 'Contraseña actualizada correctamente', null);
 });
