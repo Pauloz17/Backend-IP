@@ -1,3 +1,4 @@
+USE gestion_tareas_sena;
 SET @email_admin = 'paulo@sena.edu.co';
 
 INSERT IGNORE INTO roles (name, description)

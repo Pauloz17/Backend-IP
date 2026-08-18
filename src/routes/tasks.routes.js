@@ -29,11 +29,7 @@ import {
 // Se importa el middleware genérico de validación
 import { validateSchema } from '../middlewares/validator.middleware.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
-import {
-    checkPermission,
-    requireOwnTaskFilter,
-    requireTaskAssigneeOrUpdatePermission,
-} from '../middlewares/authorization.middleware.js';
+import { checkPermission } from '../middlewares/authorization.middleware.js';
 
 // Se importan los esquemas de validación para cada operación de tareas
 import {
@@ -49,10 +45,10 @@ const router = Router();
 // Deben ir PRIMERO para que Express no las confunda con /:id
 
 // GET /api/tasks/filter — filtra por ?status y/o ?userId
-router.get('/filter', verifyToken, requireOwnTaskFilter, filterTasks);
+router.get('/filter', filterTasks);
 
 // GET /api/tasks/dashboard — estadísticas generales
-router.get('/dashboard', verifyToken, checkPermission('tasks.view.all'), getDashboard);
+router.get('/dashboard', getDashboard);
 
 // GET /api/tasks/all — lista todas las tareas (requiere permiso RBAC)
 router.get('/all', verifyToken, checkPermission('tasks.view.all'), getTasks);
@@ -60,18 +56,18 @@ router.get('/all', verifyToken, checkPermission('tasks.view.all'), getTasks);
 // ── RUTAS PRINCIPALES ──
 
 // GET  /api/tasks — lista todas las tareas (no requiere validación de body)
-router.get('/', verifyToken, checkPermission('tasks.view.all'), getTasks);
+router.get('/', getTasks);
 
 // POST /api/tasks — crea una tarea nueva
 // validateSchema(createTaskSchema) actúa como guardia antes de createTask
 router.post('/', verifyToken, checkPermission('tasks.create'), validateSchema(createTaskSchema), createTask);
 
 // GET    /api/tasks/:id — obtiene una tarea por id (no requiere validación de body)
-router.get('/:id', verifyToken, requireTaskAssigneeOrUpdatePermission, getTaskById);
+router.get('/:id', getTaskById);
 
 // PUT    /api/tasks/:id — actualiza una tarea completa
 // updateTaskSchema usa .partial() así que todos los campos son opcionales
-router.put('/:id', verifyToken, requireTaskAssigneeOrUpdatePermission, validateSchema(updateTaskSchema), updateTask);
+router.put('/:id', validateSchema(updateTaskSchema), updateTask);
 
 // DELETE /api/tasks/:id — elimina una tarea (no requiere validación de body)
 router.delete('/:id', verifyToken, checkPermission('tasks.delete.all'), deleteTask);
@@ -80,18 +76,18 @@ router.delete('/:id', verifyToken, checkPermission('tasks.delete.all'), deleteTa
 
 // PATCH /api/tasks/:id/status — cambia solo el estado
 // Solo valida que status tenga uno de los tres valores permitidos
-router.patch('/:id/status', verifyToken, requireTaskAssigneeOrUpdatePermission, validateSchema(updateTaskStatusSchema), updateTaskStatus);
+router.patch('/:id/status', validateSchema(updateTaskStatusSchema), updateTaskStatus);
 
 // ── ASIGNACIÓN DE USUARIOS ──
 
 // POST   /api/tasks/:taskId/assign — asigna usuarios a una tarea
 // Valida que userIds sea un arreglo con al menos un número
-router.post('/:taskId/assign', verifyToken, checkPermission('tasks.assign'), validateSchema(assignUsersSchema), assignUsersToTask);
+router.post('/:taskId/assign', validateSchema(assignUsersSchema), assignUsersToTask);
 
 // GET    /api/tasks/:taskId/users — lista usuarios asignados (no requiere validación)
-router.get('/:taskId/users', verifyToken, checkPermission('tasks.view.all'), getAssignedUsers);
+router.get('/:taskId/users', getAssignedUsers);
 
 // DELETE /api/tasks/:taskId/users/:userId — quita un usuario (no requiere validación de body)
-router.delete('/:taskId/users/:userId', verifyToken, checkPermission('tasks.assign'), removeUserFromTask);
+router.delete('/:taskId/users/:userId', removeUserFromTask);
 
 export default router;

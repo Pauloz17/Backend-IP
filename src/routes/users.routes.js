@@ -52,23 +52,23 @@ const router = Router();
 // ── RUTAS SIN PARÁMETRO DINÁMICO ─────────────────────────────────────────────
 
 // GET  /api/users — lista todos los usuarios del sistema (no requiere validación)
-router.get('/', verifyToken, checkPermission('users.view'), getUsers);
+router.get('/', getUsers);
 
 // POST /api/users — crea un usuario nuevo
 // validateSchema(createUserSchema) valida documento, name y email antes de crear
-router.post('/', verifyToken, checkPermission('users.edit'), validateSchema(createUserSchema), createUser);
+router.post('/', validateSchema(createUserSchema), createUser);
 
 // ── RUTAS CON SEGMENTO FIJO AL FINAL (van ANTES de /:id) ─────────────────────
 
 // GET /api/users/available-roles — catálogo de roles del sistema (admin/instructor/user).
 // CRÍTICO: va ANTES de /:id para que Express no interprete "available-roles" como un id.
-router.get('/available-roles', verifyToken, checkPermission('users.assign.role'), listAvailableRoles);
+router.get('/available-roles', listAvailableRoles);
 
 // GET /api/users/by-document/:documento — busca un usuario por su número de documento.
-router.get('/by-document/:documento', verifyToken, checkPermission('users.view'), getUserByDocumento);
+router.get('/by-document/:documento', getUserByDocumento);
 
 // GET /api/users/:userId/tasks — retorna todas las tareas asignadas a un usuario.
-router.get('/:userId/tasks', verifyToken, checkPermission('tasks.view.all'), getUserTasks);
+router.get('/:userId/tasks', getUserTasks);
 
 // ── RUTAS RBAC MULTI-ROL ────────────────────────────────────────────────────
 // Estas rutas trabajan sobre el array de roles del usuario en la tabla pivote
@@ -91,11 +91,11 @@ router.put('/:id/roles',  verifyToken, requireAdmin, validateSchema(setRolesSche
 router.patch('/:id/password', verifyToken, changeUserPassword);
 
 // GET    /api/users/:id — obtiene un usuario por su id numérico (no requiere validación)
-router.get('/:id', verifyToken, checkPermission('users.view'), getUserById);
+router.get('/:id', getUserById);
 
 // PUT    /api/users/:id — actualiza los datos de un usuario existente
 // updateUserSchema usa .partial() — los campos son opcionales pero si vienen, se validan
-router.put('/:id', verifyToken, checkPermission('users.edit'), validateSchema(updateUserSchema), updateUser);
+router.put('/:id', validateSchema(updateUserSchema), updateUser);
 
 // DELETE /api/users/:id — elimina un usuario del sistema.
 // Requiere: token válido + permiso RBAC users.delete.

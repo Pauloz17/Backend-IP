@@ -67,9 +67,7 @@ app.use('/api/system', systemRouter);
 app.use(errorMiddleware);
 
 // Escucha en todas las interfaces de red (accesible en LAN)
-// NOTA: Cambia la IP de abajo por la IP local de tu máquina en la red.
-// Para conocer tu IP: abre una terminal y escribe 'ipconfig' (Windows)
-// y busca la línea "Dirección IPv4" de tu adaptador de red activo.
+// IP local configurada para esta red actual: 192.168.56.1
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor escuchando en http://192.168.137.42:${PORT}`);
+    console.log(`Servidor escuchando en http://192.168.56.1:${PORT}`);
 });
