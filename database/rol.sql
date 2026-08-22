@@ -14,4 +14,4 @@ UPDATE users
 SET role = 'admin'
 WHERE email = @email_admin;
 
-SELECT u.id, u.email, u.role FROM users WHERE email = @email_admin;
+SELECT u.id, u.email, u.role FROM users u WHERE u.email = @email_admin;
