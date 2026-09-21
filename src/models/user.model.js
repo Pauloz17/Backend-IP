@@ -36,7 +36,13 @@ const CAMPOS_ACTUALIZABLES = [];
 export async function getAllUsers() {
     const [rows] = await pool.query(
         `SELECT
-            u.*,
+            u.id,
+            u.documento,
+            u.name,
+            u.email,
+            u.role,
+            u.created_at,
+            u.updated_at,
             GROUP_CONCAT(r.name ORDER BY r.name SEPARATOR ',') AS roles_csv,
             COUNT(DISTINCT r.id) AS total_roles
          FROM users u
@@ -103,7 +109,7 @@ export async function updateUser(id, campos) {
     // si no hay campos válidos no se ejecuta el UPDATE
     if (Object.keys(camposFiltrados).length === 0) return existente;
     const parteSet = Object.keys(camposFiltrados).map(c => `${c} = ?`).join(', ');
-    const valores  = Object.values(camposFiltrados);
+    const valores = Object.values(camposFiltrados);
     await pool.query(
         `UPDATE users SET ${parteSet} WHERE id = ?`,
         [...valores, Number(id)]
@@ -150,7 +156,7 @@ export async function createUserWithPassword({ name, documento, email, password,
     // 2. SOPORTE MULTI-ROL: Asociar el rol inicial en la tabla pivote user_roles
     // Buscamos el ID del rol solicitado en la tabla roles
     const [rolesFound] = await pool.query('SELECT id FROM roles WHERE name = ?', [role]);
-    
+
     if (rolesFound.length > 0) {
         // Insertamos la relación en la tabla pivote
         await pool.query(
@@ -295,7 +301,7 @@ export async function removeRoleFromUser(userId, roleName) {
 // Si el usuario no tiene roles en la tabla user_roles, retorna un arreglo vacío [].
 // Esto puede pasar con usuarios registrados antes de ejecutar rbac.sql.
 export async function getUserRolesAndPermissions(userId) {
- 
+
     // La query une las 4 tablas RBAC con LEFT JOINs para que si un rol
     // no tiene permisos asignados, igual aparezca en el resultado (con permission NULL).
     // El LEFT JOIN en role_permissions y permissions garantiza que roles sin permisos
@@ -312,20 +318,20 @@ export async function getUserRolesAndPermissions(userId) {
         ORDER BY r.name, p.code`,
         [Number(userId)]
     );
- 
+
     // Si el usuario no tiene roles en user_roles, retornar arreglo vacío
     if (rows.length === 0) return [];
- 
+
     // Agrupar los resultados por nombre de rol, acumulando sus permisos en un arreglo.
     // rows puede tener múltiples filas con el mismo roleName (una por cada permiso).
     // Necesitamos convertirlas a: [{ name: 'admin', permissions: ['tasks.create', ...] }]
     const rolesMap = {};
- 
-    rows.forEach(function(fila) {
+
+    rows.forEach(function (fila) {
         // Si este rol no está en el mapa todavía, creamos su entrada
         if (!rolesMap[fila.roleName]) {
             rolesMap[fila.roleName] = {
-                name:        fila.roleName,
+                name: fila.roleName,
                 permissions: [],
             };
         }
@@ -335,7 +341,7 @@ export async function getUserRolesAndPermissions(userId) {
             rolesMap[fila.roleName].permissions.push(fila.permissionCode);
         }
     });
- 
+
     // Object.values convierte el mapa de objetos a un arreglo de roles
     return Object.values(rolesMap);
 }
@@ -443,13 +449,13 @@ export async function updateUserPassword(id, nuevaPasswordHasheada) {
     // Verificar que el usuario existe antes de intentar actualizar
     const existente = await getUserById(id);
     if (!existente) return null;
- 
+
     // Solo actualiza la columna password — ningún otro campo se toca
     await pool.query(
         'UPDATE users SET password = ? WHERE id = ?',
         [nuevaPasswordHasheada, Number(id)]
     );
- 
+
     // Retornar el usuario con los datos actualizados
     return getUserById(id);
 }

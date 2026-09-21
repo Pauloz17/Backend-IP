@@ -62,12 +62,12 @@ router.get('/', getTasks);
 // validateSchema(createTaskSchema) actúa como guardia antes de createTask
 router.post('/', verifyToken, checkPermission('tasks.create'), validateSchema(createTaskSchema), createTask);
 
-// GET    /api/tasks/:id — obtiene una tarea por id (no requiere validación de body)
-router.get('/:id', getTaskById);
+// GET    /api/tasks/:id — obtiene una tarea por id (requiere autenticación)
+router.get('/:id', verifyToken, getTaskById);
 
 // PUT    /api/tasks/:id — actualiza una tarea completa
 // updateTaskSchema usa .partial() así que todos los campos son opcionales
-router.put('/:id', validateSchema(updateTaskSchema), updateTask);
+router.put('/:id', verifyToken, checkPermission('tasks.update'), validateSchema(updateTaskSchema), updateTask);
 
 // DELETE /api/tasks/:id — elimina una tarea (no requiere validación de body)
 router.delete('/:id', verifyToken, checkPermission('tasks.delete.all'), deleteTask);
@@ -76,18 +76,18 @@ router.delete('/:id', verifyToken, checkPermission('tasks.delete.all'), deleteTa
 
 // PATCH /api/tasks/:id/status — cambia solo el estado
 // Solo valida que status tenga uno de los tres valores permitidos
-router.patch('/:id/status', validateSchema(updateTaskStatusSchema), updateTaskStatus);
+router.patch('/:id/status', verifyToken, checkPermission('tasks.status.update'), validateSchema(updateTaskStatusSchema), updateTaskStatus);
 
 // ── ASIGNACIÓN DE USUARIOS ──
 
 // POST   /api/tasks/:taskId/assign — asigna usuarios a una tarea
 // Valida que userIds sea un arreglo con al menos un número
-router.post('/:taskId/assign', validateSchema(assignUsersSchema), assignUsersToTask);
+router.post('/:taskId/assign', verifyToken, checkPermission('tasks.assign'), validateSchema(assignUsersSchema), assignUsersToTask);
 
 // GET    /api/tasks/:taskId/users — lista usuarios asignados (no requiere validación)
 router.get('/:taskId/users', getAssignedUsers);
 
 // DELETE /api/tasks/:taskId/users/:userId — quita un usuario (no requiere validación de body)
-router.delete('/:taskId/users/:userId', removeUserFromTask);
+router.delete('/:taskId/users/:userId', verifyToken, checkPermission('tasks.assign'), removeUserFromTask);
 
 export default router;

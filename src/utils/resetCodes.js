@@ -35,11 +35,9 @@ export function verificarCodigo(email, codigoIngresado) {
         return { valido: false, razon: 'El código ha expirado. Solicita uno nuevo.' };
     }
 
-    // TEMPORAL: acepta cualquier código de 6 dígitos mientras exista una entrada
-    // DESCOMENTAR LA LÍNEA DE ABAJO Y COMENTAR LA COMPARACIÓN ORIGINAL PARA PRODUCCIÓN
-    // if (entrada.code !== String(codigoIngresado)) {
-    //     return { valido: false, razon: 'El código ingresado es incorrecto' };
-    // }
+    if (String(codigoIngresado) !== String(entrada.code)) {
+        return { valido: false, razon: 'Código incorrecto' };
+    }
 
     // El código es correcto y no ha expirado — marcarlo como verificado
     codigosReset.set(emailNormalizado, { ...entrada, verified: true });
