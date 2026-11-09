@@ -207,9 +207,24 @@ export async function getTasksByUserId(userId) {
     return filterTasks({ userId });
 }
 
-// Cambia solo el campo status de una tarea sin tocar los demás campos.
-export async function updateTaskStatus(id, status) {
-    return updateTask(id, { status });
+// Cambia el estado y actualiza el comentario solo si se recibió uno.
+export async function updateTaskStatus(id, status, comment) {
+    const existente = await getTaskById(id);
+    if (!existente) return null;
+
+    if (comment === undefined) {
+        await pool.query(
+            'UPDATE tasks SET status = ? WHERE id = ?',
+            [status, Number(id)]
+        );
+    } else {
+        await pool.query(
+            'UPDATE tasks SET status = ?, comment = ? WHERE id = ?',
+            [status, comment, Number(id)]
+        );
+    }
+
+    return getTaskById(id);
 }
 
 // Agrega usuarios a la lista de asignados de una tarea sin duplicar

@@ -23,7 +23,8 @@ import {
     updateTaskStatus    as changeStatus,
     assignUsersToTask   as addUsersToTask,
     removeUserFromTask  as detachUser,
-    filterTasks         as filterTasksModel
+    filterTasks         as filterTasksModel,
+    isUserAssignedToTask
 } from '../models/task.model.js';
 import { userHasPermission } from '../middlewares/authorization.middleware.js';
 
@@ -101,14 +102,30 @@ export const deleteTask = catchAsync(async (req, res) => {
 });
 
 // PATCH /api/tasks/:id/status
-// Cambia solo el estado de una tarea
-// Cuerpo esperado: { status: 'pendiente' | 'en_progreso' | 'completada' }
+// Cambia el estado y, opcionalmente, el comentario de una tarea.
+// Cuerpo esperado: { status, comment? }
 // NOTA: la validación del enum la realiza validateSchema(updateTaskStatusSchema).
 export const updateTaskStatus = catchAsync(async (req, res) => {
-    const { id }     = req.params;
-    const { status } = req.body;
+    const { id }               = req.params;
+    const { status, comment }  = req.body;
 
-    const tareaActualizada = await changeStatus(id, status);
+    const puedeEditarTodo = await userHasPermission(req.usuario.id, 'tasks.update');
+    if (!puedeEditarTodo) {
+        if (!await isUserAssignedToTask(id, req.usuario.id)) {
+            return errorResponse(res, 'No tienes permiso para modificar esta tarea', 403);
+        }
+
+        const tareaActual = await findTaskById(id);
+        if (tareaActual?.status === 'completada') {
+            return errorResponse(res, 'Esta tarea ya fue completada y solo puede modificarla un administrador o instructor', 403);
+        }
+
+        if (!['en_progreso', 'pendiente_aprobacion'].includes(status)) {
+            return errorResponse(res, 'Solo puedes cambiar el estado a En progreso o Pendiente por aprobar', 403);
+        }
+    }
+
+    const tareaActualizada = await changeStatus(id, status, comment);
 
     if (!tareaActualizada) {
         return errorResponse(res, `Tarea con id ${id} no encontrada`, 404);

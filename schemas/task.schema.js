@@ -91,6 +91,10 @@ export const updateTaskStatusSchema = z.object({
             message:        "El estado debe ser: 'pendiente', 'en_progreso', 'pendiente_aprobacion' o 'completada'",
         }
     ),
+    comment: z
+        .string({ invalid_type_error: 'El comentario debe ser una cadena de texto' })
+        .max(500, 'El comentario no puede exceder los 500 caracteres')
+        .optional(),
 });
 
 // Esquema para ASIGNAR usuarios a una tarea — POST /api/tasks/:taskId/assign

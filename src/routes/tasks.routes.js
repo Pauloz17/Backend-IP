@@ -75,8 +75,8 @@ router.delete('/:id', verifyToken, checkPermission('tasks.delete.all'), deleteTa
 // ── ESTADO ──
 
 // PATCH /api/tasks/:id/status — cambia solo el estado
-// Solo valida que status tenga uno de los tres valores permitidos
-router.patch('/:id/status', verifyToken, checkPermission('tasks.status.update'), validateSchema(updateTaskStatusSchema), updateTaskStatus);
+// Valida el body y aplica las restricciones de permisos en el controlador.
+router.patch('/:id/status', verifyToken, validateSchema(updateTaskStatusSchema), updateTaskStatus);
 
 // ── ASIGNACIÓN DE USUARIOS ──
 
